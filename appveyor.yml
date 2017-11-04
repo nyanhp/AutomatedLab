@@ -1,0 +1,31 @@
+version: 4.4.{build}
+
+branches:
+  only:
+    - master
+
+image: Visual Studio 2017
+
+test_script:
+    - ps: |
+        $testResultsFile = ".\TestsResults.xml"
+        $res = Invoke-Pester -OutputFormat NUnitXml -OutputFile $testResultsFile -PassThru
+        (New-Object 'System.Net.WebClient').UploadFile("https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)", (Resolve-Path $testResultsFile))
+        if ($res.FailedCount -gt 0) {
+            throw "$($res.FailedCount) tests failed."
+        }
+
+build:
+  project: AutomatedLab.sln
+
+deploy:
+  release: AutomatedLab-v$(appveyor_build_version)
+  description: 'Release description'
+  provider: GitHub
+  auth_token:
+    secure: YMKyXVrtkuyciwUqQh+UZnCYrL7HgBdIVbTzuLSsVzHQCTF/e5ZLs6lUBPPj53fC # your encrypted token from GitHub
+  artifact: /.*\.nupkg/            # upload all NuGet packages to release assets
+  draft: false
+  prerelease: false
+  on:
+    branch: master                 # release from master branch only
