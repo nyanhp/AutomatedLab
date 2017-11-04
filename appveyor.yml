@@ -30,7 +30,7 @@ after_build:
           Push-AppVeyorArtifact $f.FullName
         }
 artifacts:
-  - path: C:\projects\automatedlab\Installer\bin\Debug\AutomatedLab.msi 
+  - path: \Installer\bin\Debug\AutomatedLab.msi 
     name: alinstaller
     type: file
 deploy:
