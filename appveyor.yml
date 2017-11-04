@@ -6,12 +6,15 @@ branches:
 
 skip_tags: true
 
-image: Visual Studio 2017
-
 install:
+  - git clone https://github.com/PowerShell/DscResource.Tests
   - ps: |
-        Install-PackageProvider -Name NuGet -Force
-        #Install-Module -Name Pester -Repository PSGallery -Force
+        Push-Location
+        cd DscResource.Tests
+        Import-Module .\TestHelper.psm1 -force
+        Pop-Location
+        Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+        Install-Module -Name Pester -Repository PSGallery -Force
 
 test_script:
     - ps: |
@@ -23,13 +26,13 @@ test_script:
             throw "$($res.FailedCount) tests failed."
         }
 
-build:
-  project: AutomatedLab.sln
-
 before_build:
   -ps: |
        gci -Filter *.psd1 -Recurse | foreach {(Get-Content $_.FullName -Raw) -replace "ModuleVersion = '\d\.\d\.\d\.\d'", "ModuleVersion = '$env:APPVEYOR_BUILD_VERSION'" | Out-File $_.FullName}
        gci -Filter AssemblyInfo.cs -Recurse | foreach {(Get-Content $_.FullName -Raw) -replace '[assembly: AssemblyVersion("\d\.\d\.\d\.\d")]', "[assembly: AssemblyVersion(`"$env:APPVEYOR_BUILD_VERSION`")]" -replace '[assembly: AssemblyFileVersion("\d\.\d\.\d\.\d")]', "[assembly: AssemblyFileVersion(`"$env:APPVEYOR_BUILD_VERSION`")]" | Out-File $_.FullName}
+
+build:
+  project: AutomatedLab.sln
 
 after_build:
   - ps: |
@@ -49,6 +52,7 @@ after_build:
         nuget pack ".\$($env:APPVEYOR_PROJECT_NAME).nuspec" -outputdirectory .
         $nuGetPackageName = $env:APPVEYOR_PROJECT_NAME + ".*.nupkg"
         $nuGetPackagePath = (Get-Item $nuGetPackageName).FullName
+        Write-Host "Pushing $nugetpackagepath"
         Push-AppVeyorArtifact $nuGetPackagePath
 artifacts:
   - path: \Installer\bin\Debug\AutomatedLab.msi 
