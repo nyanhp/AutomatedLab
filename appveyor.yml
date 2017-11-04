@@ -8,6 +8,11 @@ skip_tags: true
 
 image: Visual Studio 2017
 
+install:
+  - ps: |
+        Install-PackageProvider -Name NuGet -Force
+        #Install-Module -Name Pester -Repository PSGallery -Force
+
 test_script:
     - ps: |
         # In case we ever get pester tests in place
@@ -21,6 +26,11 @@ test_script:
 build:
   project: AutomatedLab.sln
 
+before_build:
+  -ps: |
+       gci -Filter *.psd1 -Recurse | foreach {(Get-Content $_.FullName -Raw) -replace "ModuleVersion = '\d\.\d\.\d\.\d'", "ModuleVersion = '$env:APPVEYOR_BUILD_VERSION'" | Out-File $_.FullName}
+       gci -Filter AssemblyInfo.cs -Recurse | foreach {(Get-Content $_.FullName -Raw) -replace '[assembly: AssemblyVersion("\d\.\d\.\d\.\d")]', "[assembly: AssemblyVersion(`"$env:APPVEYOR_BUILD_VERSION`")]" -replace '[assembly: AssemblyFileVersion("\d\.\d\.\d\.\d")]', "[assembly: AssemblyFileVersion(`"$env:APPVEYOR_BUILD_VERSION`")]" | Out-File $_.FullName}
+
 after_build:
   - ps: |
         # Find MSIs
@@ -29,6 +39,17 @@ after_build:
         {
           Push-AppVeyorArtifact $f.FullName
         }
+        $stagingDirectory = (Resolve-Path ..).Path
+        $zipFilePath = Join-Path $stagingDirectory "$(Split-Path $pwd -Leaf).zip"
+        Add-Type -assemblyname System.IO.Compression.FileSystem
+        [System.IO.Compression.ZipFile]::CreateFromDirectory($pwd, $zipFilePath)
+
+        # Creating NuGet package artifact
+        New-Nuspec -packageName $env:APPVEYOR_PROJECT_NAME -version "$($env:APPVEYOR_BUILD_VERSION)" -author "Raimund Andree Per Pedersen Jan-Hendrik Peters" -owners "Jan-Hendrik Peters" -licenseUrl "https://github.com/nyanhp/AutomatedLab/blob/master/LICENSE" -projectUrl "https://github.com/$($env:APPVEYOR_REPO_NAME)" -packageDescription $env:APPVEYOR_PROJECT_NAME -tags "AL" -destinationPath .
+        nuget pack ".\$($env:APPVEYOR_PROJECT_NAME).nuspec" -outputdirectory .
+        $nuGetPackageName = $env:APPVEYOR_PROJECT_NAME + ".*.nupkg"
+        $nuGetPackagePath = (Get-Item $nuGetPackageName).FullName
+        Push-AppVeyorArtifact $nuGetPackagePath
 artifacts:
   - path: \Installer\bin\Debug\AutomatedLab.msi 
     name: alinstaller
