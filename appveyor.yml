@@ -21,7 +21,7 @@ test_script:
 build:
   project: AutomatedLab.sln
 
-before_deploy:
+after_build:
   - ps: |
         # Find MSIs
         $msifiles = Get-ChildItem -Recurse -Filter AutomatedLab.msi
@@ -30,15 +30,16 @@ before_deploy:
           Push-AppVeyorArtifact $f.FullName
         }
 artifacts:
-  - path: AutomatedLab\.msi
+  - path: C:\projects\automatedlab\Installer\bin\Debug\AutomatedLab.msi 
     name: alinstaller
+    type: file
 deploy:
   release: AutomatedLab-v$(appveyor_build_version)
   description: 'Release description'
   provider: GitHub
   auth_token:
     secure: YMKyXVrtkuyciwUqQh+UZnCYrL7HgBdIVbTzuLSsVzHQCTF/e5ZLs6lUBPPj53fC # your encrypted token from GitHub
-  artifact: C:\\projects\\automatedlab\\Installer\\bin\\Debug\\AutomatedLab\.msi            # upload all NuGet packages to release assets
+  artifact: alinstaller            # upload all NuGet packages to release assets
   draft: false
   prerelease: false
   on:
