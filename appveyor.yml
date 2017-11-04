@@ -24,10 +24,10 @@ build:
 before_deploy:
   - ps: |
         # Find MSIs
-        $msifiles = Get-ChildItem -Recurse -Filter *.msi
+        $msifiles = Get-ChildItem -Recurse -Filter AutomatedLab.msi
         foreach($f in $msifiles)
         {
-          Write-Host $f.FullName  
+          Push-AppVeyorArtifact $f.FullName
         }
 deploy:
   release: AutomatedLab-v$(appveyor_build_version)
@@ -35,7 +35,7 @@ deploy:
   provider: GitHub
   auth_token:
     secure: YMKyXVrtkuyciwUqQh+UZnCYrL7HgBdIVbTzuLSsVzHQCTF/e5ZLs6lUBPPj53fC # your encrypted token from GitHub
-  artifact: .*\.msi            # upload all NuGet packages to release assets
+  artifact: AutomatedLab\.msi            # upload all NuGet packages to release assets
   draft: false
   prerelease: false
   on:
