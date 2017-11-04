@@ -38,7 +38,7 @@ deploy:
   provider: GitHub
   auth_token:
     secure: YMKyXVrtkuyciwUqQh+UZnCYrL7HgBdIVbTzuLSsVzHQCTF/e5ZLs6lUBPPj53fC # your encrypted token from GitHub
-  artifact: alinstaller            # upload all NuGet packages to release assets
+  artifact: C:\\projects\\automatedlab\\Installer\\bin\\Debug\\AutomatedLab\.msi            # upload all NuGet packages to release assets
   draft: false
   prerelease: false
   on:
