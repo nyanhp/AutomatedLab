@@ -30,10 +30,10 @@ before_build:
   - nuget restore
   - ps: |
         Write-Host "'before_build' block"
-        Write-Host "Calling api"
-        Add-AppVeyorMessage "Calling api to reset build"
+        Write-Host "Calling api $($env:APPVEYOR_API_URL)api/projects/nyanhp/automatedlab/settings/build-number"
+        Add-AppVeyorMessage "Calling api $($env:APPVEYOR_API_URL)api/projects/nyanhp/automatedlab/settings/build-number to reset build"
         $json = "{`"nextBuildNumber`" : 0}"
-        Invoke-RestMethod -Method PUT -Uri "$($env:APPVEYOR_API_URL)api/projects/automatedlab/automatedlab/settings/build-number" -Body $json -ContentType application/json
+        Invoke-RestMethod -Method PUT -Uri "$($env:APPVEYOR_API_URL)api/projects/nyanhp/automatedlab/settings/build-number" -Body $json -ContentType application/json
         Write-Host "Setting version number in files"
         Add-AppveyorMessage -Message "Setting version number in files" -Category Information
         gci -Filter *.psd1 -Recurse | foreach {(Get-Content $_.FullName -Raw) -replace "ModuleVersion += '\d\.\d\.\d\.\d'", "ModuleVersion = '$env:APPVEYOR_BUILD_VERSION'" | Out-File $_.FullName}
