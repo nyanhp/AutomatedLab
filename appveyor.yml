@@ -24,15 +24,15 @@ before_build:
   - nuget restore
   - ps: |
         Write-Host "'before_build' block"
-        Write-Host "Calling api $($env:APPVEYOR_API_URL)api/projects/nyanhp/automatedlab/settings/build-number"
+        Write-Host "Calling api $appveyorUrl"
         Add-AppVeyorMessage "Calling api to reset build"
-        $appveyorUrl = "https://ci.appveyor.com/api/projects/automatedlab/automatedlab/settings/build-number"
+        $appveyorUrl = "https://ci.appveyor.com/api/projects/nyanhp/automatedlab/settings/build-number"
 
         $headers = @{
             "Authorization" = "Bearer $env:AppVeyorApi"
             "Content-type" = "application/json"
         }
-        $headers
+        
         $body = @{ nextBuildNumber=4711 }
         $body = $body | ConvertTo-Json
         Invoke-RestMethod -Uri $appveyorUrl -Headers $headers -Body $body -Method Put
