@@ -4,7 +4,7 @@ image:
 
 environment:
   AppVeyorApi:
-    secure: A6UkhMrfNgGG/sn2ukGFztqAQKPn6JmBDSsbFbgDLik=
+    secure: p+Ozf2MlIbzTx8eVwXiZEFPnCYM8dITJTn2albXeWlQ=
   NuGetApiKey:
     secure: tAdUQmRiZ270LOPN8SwbjISLfu6ldDTw6LWvdtsk+pQR7r5bJnGrG8Ntyt87edJ/
 
