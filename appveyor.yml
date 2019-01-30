@@ -1,4 +1,4 @@
-version: 5.1.0.{build}
+version: 5.2.0.{build}
 image:
 - Visual Studio 2017
 
@@ -25,15 +25,15 @@ before_build:
   - ps: |
         Write-Host "'before_build' block"
         Write-Host "Calling api $($env:APPVEYOR_API_URL)api/projects/nyanhp/automatedlab/settings/build-number"
-        Add-AppVeyorMessage "Calling api $($env:APPVEYOR_API_URL)api/projects/nyanhp/automatedlab/settings/build-number to reset build"
+        Add-AppVeyorMessage "Calling api to reset build"
         $appveyorUrl = "https://ci.appveyor.com/api/projects/automatedlab/automatedlab/settings/build-number"
 
         $headers = @{
             "Authorization" = "Bearer $env:AppVeyorApi"
             "Content-type" = "application/json"
         }
-
-        $body = @{ nextBuildNumber="0" }
+        $headers
+        $body = @{ nextBuildNumber=4711 }
         $body = $body | ConvertTo-Json
         Invoke-RestMethod -Uri $appveyorUrl -Headers $headers -Body $body -Method Put
 
