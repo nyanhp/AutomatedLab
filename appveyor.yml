@@ -5,7 +5,9 @@ image:
 environment:
   AppVeyorApi:
     secure: p+Ozf2MlIbzTx8eVwXiZEFPnCYM8dITJTn2albXeWlQ=
-
+branches:
+  except:
+    - /.*Release.*/
 skip_tags: true
 
 init:
@@ -17,11 +19,13 @@ init:
         {          
           $properVersion = $compareVersion.ToString(3)
           Add-AppVeyorMessage -Category Warning "Resetting version from $env:APPVEYOR_BUILD_VERSION to $properVersion"
+          $deleteBuild = $env:APPVEYOR_BUILD_VERSION
           [environment]::setenvironmentvariable('APPVEYOR_BUILD_VERSION',$properVersion )
           Update-AppveyorBuild -Version $properVersion
 
           Add-AppVeyorMessage "Calling API to reset build to 1 for next commit"
           $appveyorUrl = "https://ci.appveyor.com/api/projects/nyanhp/automatedlab/settings/build-number"
+          $appveyorUrlDelete = "https://ci.appveyor.com/api/projects/nyanhp/automatedlab/settings/build-number"
 
           $headers = @{
               "Authorization" = "Bearer $env:AppVeyorApi"
