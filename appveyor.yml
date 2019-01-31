@@ -7,7 +7,7 @@ environment:
     secure: p+Ozf2MlIbzTx8eVwXiZEFPnCYM8dITJTn2albXeWlQ=
 branches:
   except:
-    - /.*Release.*/
+    - /(?i).*release.*/
 skip_tags: true
 
 init:
