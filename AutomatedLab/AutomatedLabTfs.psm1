@@ -5,9 +5,14 @@ function Install-LabTeamFoundationEnvironment
     param
     ( )
 
-    $tfsMachines = Get-LabVm -Role Tfs2015, Tfs2017, Tfs2018
+    $tfsMachines, $skippedMachines = (Get-LabVm -Role Tfs2015, Tfs2017, Tfs2018).Where( {Get-LabTfsSite -ComputerName $machine -Resolve -ErrorAction SilentlyContinue}, 'Split')
     $lab = Get-Lab
     $jobs = @()
+
+    foreach ($machine in $skippedMachines)
+    {
+        Write-ScreenInfo -Type Warning -Message "TFS URL $(Get-LabTfsSite -ComputerName $machine -Resolve) is already reachable. Skipping deployment of $machine."
+    }
 
     foreach ($machine in $tfsMachines)
     {
@@ -264,7 +269,7 @@ function Install-LabBuildWorker
 
             $commandLine = if ($useSsl)
             {
-				#sslskipcertvalidation is used as git.exe could not test the certificate chain
+                #sslskipcertvalidation is used as git.exe could not test the certificate chain
                 '--unattended --url https://{0}:{1} --auth Integrated --pool default --agent {2} --runasservice --sslskipcertvalidation --gituseschannel' -f $machineName, $tfsPort, $env:COMPUTERNAME
             }
             else
@@ -692,12 +697,16 @@ function Get-LabReleaseStep
     return (Get-TfsReleaseStep -InstanceName $tfsInstance -CollectionName $initialCollection -Credential $credential -UseSsl:$useSsl -Port $tfsPort)
 }
 
-function Open-LabTfsSite
+function Get-LabTfsSite
 {
+    [CmdletBinding()]
     param
     (
         [string]
-        $ComputerName
+        $ComputerName,
+
+        [switch]
+        $Resolve
     )
 
     if (-not (Get-Lab -ErrorAction SilentlyContinue))
@@ -705,50 +714,80 @@ function Open-LabTfsSite
         throw 'No lab imported. Please use Import-Lab to import the target lab containing at least one TFS server'
     }
 
-    $tfsvm = Get-LabVm -Role Tfs2015, Tfs2017, Tfs2018 | Select-Object -First 1
-    $useSsl = $tfsVm.InternalNotes.ContainsKey('CertificateThumbprint')
+    $tfsvms = Get-LabVm -Role Tfs2015, Tfs2017, Tfs2018
 
     if ($ComputerName)
     {
-        $tfsVm = Get-LabVm -ComputerName $ComputerName
+        $tfsvms = $tfsvms | Where-Object -Property Name -eq $ComputerName
     }
 
-    if (-not $tfsvm) { throw ('No TFS VM in lab or no machine found with name {0}' -f $ComputerName)}
-  
-    $role = $tfsVm.Roles | Where-Object Name -like Tfs????
-    $initialCollection = 'AutomatedLab'
-    $tfsPort = 8080
-    $tfsInstance = $tfsvm.FQDN
-    $credential = $tfsVm.GetCredential((Get-Lab))
-  
-    if ($role.Properties.ContainsKey('Port'))
+    foreach ($tfsVm in $tfsvms)
     {
-        $tfsPort = $role.Properties['Port']
-    }
-
-    if ((Get-Lab).DefaultVirtualizationEngine -eq 'Azure')
-    {
-        $loadbalancedPort = Get-LabAzureLoadBalancedPort -Port $tfsPort -ComputerName $tfsvm -ErrorAction SilentlyContinue
-
-        if (-not $loadbalancedPort)
+        $useSsl = $tfsVm.InternalNotes.ContainsKey('CertificateThumbprint')
+  
+        $role = $tfsVm.Roles | Where-Object Name -like Tfs????
+        $initialCollection = 'AutomatedLab'
+        $tfsPort = 8080
+        $tfsInstance = $tfsvm.FQDN
+        $credential = $tfsVm.GetCredential((Get-Lab))
+  
+        if ($role.Properties.ContainsKey('Port'))
         {
-            Write-Error -Message 'There has been an error setting the Azure port during TFS installation. Cannot open TFS site.'
-            return
+            $tfsPort = $role.Properties['Port']
         }
-      
-        $tfsPort = $loadbalancedPort
-        $tfsInstance = $tfsvm.AzureConnectionInfo.DnsName
-    }
 
-    $requestUrl = if ($UseSsl)
-    {
-        'https://{0}:{1}@{2}:{3}' -f $credential.GetNetworkCredential().UserName, $credential.GetNetworkCredential().Password, $tfsInstance, $tfsPort
+        if ((Get-Lab).DefaultVirtualizationEngine -eq 'Azure')
+        {
+            $loadbalancedPort = Get-LabAzureLoadBalancedPort -Port $tfsPort -ComputerName $tfsvm -ErrorAction SilentlyContinue
+
+            if (-not $loadbalancedPort)
+            {
+                Write-Error -Message 'There has been an error setting the Azure port during TFS installation. Cannot open TFS site.'
+                return
+            }
+      
+            $tfsPort = $loadbalancedPort
+            $tfsInstance = $tfsvm.AzureConnectionInfo.DnsName
+        }
+
+        $url = if ($UseSsl)
+        {
+            'https://{0}:{1}@{2}:{3}' -f $credential.GetNetworkCredential().UserName, $credential.GetNetworkCredential().Password, $tfsInstance, $tfsPort
+        }
+        else
+        {
+            'http://{0}:{1}@{2}:{3}' -f $credential.GetNetworkCredential().UserName, $credential.GetNetworkCredential().Password, $tfsInstance, $tfsPort
+        }
+
+        if ($Resolve)
+        {
+            $response = Invoke-RestMethod -Method Head -Uri $url -UseBasicParsing -Credential $credential
+            if ($response)
+            {
+                $url
+            }
+        }
+        else
+        {
+            $url
+        }
     }
-    else
+}
+#endregion
+
+#region Open-LabTfsSite
+function Open-LabTfsSite
+{
+    [CmdletBinding()]
+    param
+    (
+        [string]
+        $ComputerName
+    )
+
+    foreach ($site in (Get-LabTfsSite @PSBoundParameters))
     {
-        'http://{0}:{1}@{2}:{3}' -f $credential.GetNetworkCredential().UserName, $credential.GetNetworkCredential().Password, $tfsInstance, $tfsPort
+        Start-Process -FilePath $site
     }
-  
-    Start-Process -FilePath $requestUrl
 }
 #endregion
