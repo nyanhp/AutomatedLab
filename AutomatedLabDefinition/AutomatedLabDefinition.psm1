@@ -694,8 +694,6 @@ function New-LabDefinition
 
         [string]$AzureSubscriptionName,
 
-        [string]$AzureDnsLabel,
-
         [switch]$PassThru
     )
 
@@ -821,11 +819,6 @@ function New-LabDefinition
     $script:lab = New-Object AutomatedLab.Lab
 
     $script:lab.Name = $Name
-
-    if ($AzureDnsLabel)
-    {
-        $script:lab.AzureSettings.CustomPublicDnsLabel = $AzureDnsLabel
-    }
 
     Update-LabSysinternalsTools
 

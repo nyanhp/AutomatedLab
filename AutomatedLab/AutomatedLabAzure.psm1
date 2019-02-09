@@ -47,6 +47,8 @@ function Add-LabAzureSubscription
 
         [string]$DefaultResourceGroupName,
 
+        [string]$AzureDnsLabel,
+
         [switch]$PassThru
     )
 
@@ -86,6 +88,11 @@ function Add-LabAzureSubscription
     if (-not $script:lab.AzureSettings)
     {
         $script:lab.AzureSettings = New-Object AutomatedLab.AzureSettings
+    }
+
+    if ($AzureDnsLabel)
+    {
+        $script:lab.AzureSettings.CustomPublicDnsLabel = $AzureDnsLabel
     }
 
     $script:lab.AzureSettings.DefaultRoleSize = Get-LabConfigurationItem -Name DefaultAzureRoleSize
