@@ -200,9 +200,15 @@ function New-LWAzureLoadBalancer
         $publicIp = Get-AzPublicIpAddress -Name "$($resourceGroup)$($vNet.Name)lbfrontendip" -ResourceGroupName $resourceGroup -ErrorAction SilentlyContinue
         if (-not $publicIp)
         {
+            $dnsLabel = "$((1..10 | ForEach-Object { [char[]](97..122) | Get-Random }) -join '')"
+
+            if ($lab.AzureSettings.CustomPublicDnsLabel)
+            {
+                $dnsLabel = $lab.AzureSettings.CustomPublicDnsLabel
+            }
             $publicIp = New-AzPublicIpAddress -Name "$($resourceGroup)$($vNet.Name)lbfrontendip" -ResourceGroupName $resourceGroup `
                 -Location $location -AllocationMethod Static -IpAddressVersion IPv4 `
-                -DomainNameLabel "$((1..10 | ForEach-Object { [char[]](97..122) | Get-Random }) -join '')" -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
+                -DomainNameLabel $dnsLabel -ErrorAction SilentlyContinue -WarningAction SilentlyContinue
         }
 
         $frontendConfig = New-AzLoadBalancerFrontendIpConfig -Name "$($resourceGroup)$($vNet.Name)lbfrontendconfig" -PublicIpAddress $publicIp

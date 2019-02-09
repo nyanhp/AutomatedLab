@@ -28,6 +28,8 @@ namespace AutomatedLab
         private string labSourcesResourceGroupName;
         private int loadBalancerPortCounter;
 
+        public string CustomPublicDnsLabel {get; set;}
+
         public int LoadBalancerPortCounter
         {
             get { return loadBalancerPortCounter; }
