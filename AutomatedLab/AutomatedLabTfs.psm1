@@ -264,19 +264,17 @@ function Install-LabBuildWorker
             Microsoft.PowerShell.Archive\Expand-Archive -Path C:\TfsBuildWorker.zip -DestinationPath C:\BuildWorkerSetupFiles -Force
             $configurationTool = Get-Item C:\BuildWorkerSetupFiles\config.cmd -ErrorAction Stop
 
-            $commandLine = if ($useSsl)
+            $null = if ($useSsl)
             {
                 #sslskipcertvalidation is used as git.exe could not test the certificate chain
-                '--unattended --url https://{0}:{1} --auth Integrated --pool default --agent {2} --runasservice --sslskipcertvalidation --gituseschannel' -f $machineName, $tfsPort.Port, $env:COMPUTERNAME
+                & $configurationTool --unattended --url https://$($machineName):$($tfsPort.Port) --auth Integrated --pool default --agent $env:COMPUTERNAME --runasservice --sslskipcertvalidation --gituseschannel
             }
             else
             {
-                '--unattended --url http://{0}:{1} --auth Integrated --pool default --agent {2} --runasservice --gituseschannel' -f $machineName, $tfsPort.Port, $env:COMPUTERNAME
+                & $configurationTool --unattended --url http://$($machineName):$($tfsPort.Port) --auth Integrated --pool default --agent $env:COMPUTERNAME --runasservice --gituseschannel
             }
 
-            $configurationProcess = Start-Process -FilePath $configurationTool -ArgumentList $commandLine -Wait -NoNewWindow -PassThru
-
-            if ($configurationProcess.ExitCode -notin 0, 3010)
+            if ($LASTEXITCODE -notin 0, 3010)
             {
                 Write-Warning -Message "Build worker $env:COMPUTERNAME failed to install. Exit code was $($configurationProcess.ExitCode)"
             }
