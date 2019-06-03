@@ -1,10 +1,14 @@
 #region Enable-LabHostRemoting
 function Enable-LabHostRemoting
 {
-    param(
-        [switch]$Force,
+    [CmdletBinding()]
+    param
+    (
+        [switch]
+        $Force,
 
-        [switch]$NoDisplay
+        [switch]
+        $NoDisplay
     )
 
     # .ExternalHelp AutomatedLab.Help.xml
@@ -15,6 +19,13 @@ function Enable-LabHostRemoting
     {
         throw 'This function needs to be called in an elevated PowerShell session.'
     }
+
+    if (Test-LabHostRemoting)
+    {
+        Write-ScreenInfo -Type Verbose -Message "Remoting is already configured correctly"
+        return
+    }
+
     $message = "AutomatedLab needs to enable / relax some PowerShell Remoting features.`nYou will be asked before each individual change. Are you OK to proceed?"
     if (-not $Force)
     {
@@ -82,16 +93,31 @@ function Enable-LabHostRemoting
         Write-Verbose "'*' added to TrustedHosts"
     }
 
-    $allowFreshCredentials = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentials', '1')
-    $allowFreshCredentialsWhenNTLMOnly = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentialsWhenNTLMOnly', '1')
-    $allowSavedCredentials = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentials', '1')
-    $allowSavedCredentialsWhenNTLMOnly = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentialsWhenNTLMOnly', '1')
+    $gpos = @{
+        AllowFreshCredentials = $false
+        AllowFreshCredentialsWhenNTLMOnly = $false
+        AllowSavedCredentials = $false
+        AllowSavedCredentialsWhenNTLMOnly = $false
+        AllowEncryptionOracle = (Get-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\CredSSP\Parameters -ErrorAction SilentlyContinue).AllowEncryptionOracle
+    }
+
+    try
+    {
+        $gpos.AllowFreshCredentials = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentials', '1')
+        $gpos.AllowFreshCredentialsWhenNTLMOnly = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentialsWhenNTLMOnly', '1')
+        $gpos.AllowSavedCredentials = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentials', '1')
+        $gpos.AllowSavedCredentialsWhenNTLMOnly = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentialsWhenNTLMOnly', '1')
+    }
+    catch
+    {
+        Write-ScreenInfo -Type Warning -Message 'Could not retrieve credential delegation settings'
+    }
 
     if (
-        ($allowFreshCredentials -ne '*' -and $allowFreshCredentials -ne 'WSMAN/*') -or
-        ($allowFreshCredentialsWhenNTLMOnly -ne '*' -and $allowFreshCredentialsWhenNTLMOnly -ne 'WSMAN/*') -or
-        ($allowSavedCredentials -ne '*' -and $allowSavedCredentials -ne 'TERMSRV/*') -or
-        ($allowSavedCredentialsWhenNTLMOnly -ne '*' -and $allowSavedCredentialsWhenNTLMOnly -ne 'TERMSRV/*')
+        ($gpos.AllowFreshCredentials -ne '*' -and $gpos.AllowFreshCredentials -ne 'WSMAN/*') -or
+        ($gpos.AllowFreshCredentialsWhenNTLMOnly -ne '*' -and $gpos.AllowFreshCredentialsWhenNTLMOnly -ne 'WSMAN/*') -or
+        ($gpos.AllowSavedCredentials -ne '*' -and $gpos.AllowSavedCredentials -ne 'TERMSRV/*') -or
+        ($gpos.AllowSavedCredentialsWhenNTLMOnly -ne '*' -and $gpos.AllowSavedCredentialsWhenNTLMOnly -ne 'TERMSRV/*')
     )
     {
         $message = @'
@@ -117,60 +143,85 @@ Are you OK with that?
         }
     }
 
-    $value = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentials', '1')
-    if ($value -ne '*' -and $value -ne 'WSMAN/*')
+    if ($gpos.AllowFreshCredentials -ne '*' -and $gpos.AllowFreshCredentials -ne 'WSMAN/*')
     {
         Write-ScreenInfo 'Configuring the local policy for allowing credentials to be delegated to all machines (*). You can find the modified policy using gpedit.msc by navigating to: Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials' -Type Warning
-        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'AllowFreshCredentials', 1) | Out-Null
-        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'ConcatenateDefaults_AllowFresh', 1) | Out-Null
-        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentials', '1', 'WSMAN/*') | Out-Null
+        
+        try
+        {
+            [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'AllowFreshCredentials', 1) | Out-Null
+            [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'ConcatenateDefaults_AllowFresh', 1) | Out-Null
+            [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentials', '1', 'WSMAN/*') | Out-Null
+        }
+        catch
+        {
+            Write-ScreenInfo -Type Warning -Message "Could not enable delegation of fresh credentials"
+        }
     }
     else
     {
         Write-Verbose "Local policy 'Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials' configured correctly"
     }
 
-    $value = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentialsWhenNTLMOnly', '1')
-    if ($value -ne '*' -and $value -ne 'WSMAN/*')
+    if ($gpos.AllowFreshCredentialsWhenNTLMOnly -ne '*' -and $gpos.AllowFreshCredentialsWhenNTLMOnly -ne 'WSMAN/*')
     {
         Write-ScreenInfo 'Configuring the local policy for allowing credentials to be delegated to all machines (*). You can find the modified policy using gpedit.msc by navigating to: Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials with NTLM-only server authentication' -Type Warning
-        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'AllowFreshCredentialsWhenNTLMOnly', 1) | Out-Null
-        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'ConcatenateDefaults_AllowFreshNTLMOnly', 1) | Out-Null
-        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentialsWhenNTLMOnly', '1', 'WSMAN/*') | Out-Null
+        try 
+        {
+            [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'AllowFreshCredentialsWhenNTLMOnly', 1) | Out-Null
+            [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'ConcatenateDefaults_AllowFreshNTLMOnly', 1) | Out-Null
+            [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentialsWhenNTLMOnly', '1', 'WSMAN/*') | Out-Null
+        }
+        catch
+        {
+            Write-ScreenInfo -Type Warning -Message "Could not enable delegation of fresh credentials when using NTLM only"
+        }
     }
     else
     {
         Write-Verbose "Local policy 'Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials when NTLM only' configured correctly"
     }
 
-    $value = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentials', '1')
-    if ($value -ne '*' -and $value -ne 'TERMSRV/*')
+    if ($gpos.AllowSavedCredentials -ne '*' -and $gpos.AllowSavedCredentials -ne 'TERMSRV/*')
     {
         Write-ScreenInfo 'Configuring the local policy for allowing credentials to be delegated to all machines (*). You can find the modified policy using gpedit.msc by navigating to: Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials' -Type Warning
-        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'AllowSavedCredentials', 1) | Out-Null
-        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'ConcatenateDefaults_AllowSaved', 1) | Out-Null
-        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentials', '1', 'TERMSRV/*') | Out-Null
+        try
+        {
+            [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'AllowSavedCredentials', 1) | Out-Null
+            [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'ConcatenateDefaults_AllowSaved', 1) | Out-Null
+            [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentials', '1', 'TERMSRV/*') | Out-Null
+        }
+        catch
+        {
+            Write-ScreenInfo -Type Warning -Message "Could not enable delegation of saved credentials"
+        }
     }
     else
     {
         Write-Verbose "Local policy 'Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Saved Credentials' configured correctly"
     }
 
-    $value = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentialsWhenNTLMOnly', '1')
-    if ($value -ne '*' -and $value -ne 'TERMSRV/*')
+    if ($gpos.AllowSavedCredentialsWhenNTLMOnly -ne '*' -and $gpos.AllowSavedCredentialsWhenNTLMOnly -ne 'TERMSRV/*')
     {
         Write-ScreenInfo 'Configuring the local policy for allowing credentials to be delegated to all machines (*). You can find the modified policy using gpedit.msc by navigating to: Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials with NTLM-only server authentication' -Type Warning
-        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'AllowSavedCredentialsWhenNTLMOnly', 1) | Out-Null
-        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'ConcatenateDefaults_AllowSavedNTLMOnly', 1) | Out-Null
-        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentialsWhenNTLMOnly', '1', 'TERMSRV/*') | Out-Null
+        try
+        {
+            [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'AllowSavedCredentialsWhenNTLMOnly', 1) | Out-Null
+            [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'ConcatenateDefaults_AllowSavedNTLMOnly', 1) | Out-Null
+            [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentialsWhenNTLMOnly', '1', 'TERMSRV/*') | Out-Null
+        }
+        catch
+        {
+            Write-ScreenInfo -Type Warning -Message "Could not enable delegation of saved credentials using NTLM only"
+        }
     }
     else
     {
         Write-Verbose "Local policy 'Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Saved Credentials when NTLM only' configured correctly"
     }
 
-    $allowEncryptionOracle = (Get-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\CredSSP\Parameters -ErrorAction SilentlyContinue).AllowEncryptionOracle
-    if ($allowEncryptionOracle -ne 2)
+    
+    if ($gpos.AllowEncryptionOracle -ne 2)
     {
         $message = @"
 A CredSSP vulnerability has been addressed with`n`n
@@ -200,10 +251,14 @@ The security setting must be relexed in order to connect to machines using CredS
 #region Undo-LabHostRemoting
 function Undo-LabHostRemoting
 {
-    param(
-        [switch]$Force,
+    [CmdletBinding()]
+    param
+    (
+        [switch]
+        $Force,
 
-        [switch]$NoDisplay
+        [switch]
+        $NoDisplay
     )
 
     # .ExternalHelp AutomatedLab.Help.xml
@@ -240,24 +295,53 @@ function Undo-LabHostRemoting
     Set-Item -Path Microsoft.WSMan.Management\WSMan::localhost\Client\TrustedHosts -Value '' -Force
 
     Write-ScreenInfo "Resetting local policy 'Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials'"
-    [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'AllowFreshCredentials', $null) | Out-Null
-    [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'ConcatenateDefaults_AllowFresh', $null) | Out-Null
-    [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentials', '1', $null) | Out-Null
+    
+    try
+    {
+        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'AllowFreshCredentials', $null) | Out-Null
+        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'ConcatenateDefaults_AllowFresh', $null) | Out-Null
+        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentials', '1', $null) | Out-Null
+    }
+    catch
+    {
+        Write-ScreenInfo -Type Warning -Message "Could not reset local policy 'Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials'"
+    }
 
     Write-ScreenInfo "Resetting local policy 'Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials with NTLM-only server authentication'"
-    [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'AllowFreshCredentialsWhenNTLMOnly', $null) | Out-Null
-    [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'ConcatenateDefaults_AllowFreshNTLMOnly', $null) | Out-Null
-    [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentialsWhenNTLMOnly', '1', $null) | Out-Null
+    try
+    {
+        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'AllowFreshCredentialsWhenNTLMOnly', $null) | Out-Null
+        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'ConcatenateDefaults_AllowFreshNTLMOnly', $null) | Out-Null
+        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentialsWhenNTLMOnly', '1', $null) | Out-Null
+    }
+    catch
+    {
+        Write-ScreenInfo -Type Warning -Message "Could not reset local policy 'Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials with NTLM-only server authentication'"
+    }
 
     Write-ScreenInfo "Resetting local policy 'Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials'"
-    [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'AllowSavedCredentials', $null) | Out-Null
-    [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'ConcatenateDefaults_AllowSaved', $null) | Out-Null
-    [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentials', '1', $null) | Out-Null
+    try
+    {
+        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'AllowSavedCredentials', $null) | Out-Null
+        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'ConcatenateDefaults_AllowSaved', $null) | Out-Null
+        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentials', '1', $null) | Out-Null
+    }
+    catch
+    {
+        Write-ScreenInfo -Type Warning -Message "Could not reset local policy 'Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials'"
+    }
 
     Write-ScreenInfo "Resetting local policy 'Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials with NTLM-only server authentication'"
-    [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'AllowSavedCredentialsWhenNTLMOnly', $null) | Out-Null
-    [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'ConcatenateDefaults_AllowSavedNTLMOnly', $null) | Out-Null
-    [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentialsWhenNTLMOnly', '1', $null) | Out-Null
+    try
+    {
+        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'AllowSavedCredentialsWhenNTLMOnly', $null) | Out-Null
+        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation', 'ConcatenateDefaults_AllowSavedNTLMOnly', $null) | Out-Null
+        [GPO.Helper]::SetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentialsWhenNTLMOnly', '1', $null) | Out-Null
+    }
+    catch
+    {
+        Write-ScreenInfo -Type Warning -Message "Could not reset local policy 'Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials with NTLM-only server authentication'"
+    }
 
     Write-ScreenInfo "removing 'AllowEncryptionOracle' registry setting"
     if (Test-Path -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\CredSSP)
@@ -310,36 +394,52 @@ function Test-LabHostRemoting
         $configOk = $false
     }
 
-    $value = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentials', '1')
-    if ($value -ne '*' -and $value -ne 'WSMAN/*')
+    $gpos = @{
+        AllowFreshCredentials = $false
+        AllowFreshCredentialsWhenNTLMOnly = $false
+        AllowSavedCredentials = $false
+        AllowSavedCredentialsWhenNTLMOnly = $false
+        AllowEncryptionOracle = (Get-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\CredSSP\Parameters -ErrorAction SilentlyContinue).AllowEncryptionOracle
+    }
+
+    try
+    {
+        $gpos.AllowFreshCredentials = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentials', '1')
+        $gpos.AllowFreshCredentialsWhenNTLMOnly = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentialsWhenNTLMOnly', '1')
+        $gpos.AllowSavedCredentials = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentials', '1')
+        $gpos.AllowSavedCredentialsWhenNTLMOnly = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentialsWhenNTLMOnly', '1')
+    }
+    catch
+    {
+        Write-ScreenInfo -Type Warning -Message 'Could not retrieve credential delegation settings'
+    }
+
+    if ($gpos.AllowFreshCredentials -ne '*' -and $gpos.AllowFreshCredentials -ne 'WSMAN/*')
     {
         Write-ScreenInfo "Local policy 'Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials' is not configured as required" -Type Verbose
         $configOk = $false
     }
 
-    $value = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowFreshCredentialsWhenNTLMOnly', '1')
-    if ($value -ne '*' -and $value -ne 'WSMAN/*')
+    if ($gpos.AllowFreshCredentialsWhenNTLMOnly -ne '*' -and $gpos.AllowFreshCredentialsWhenNTLMOnly -ne 'WSMAN/*')
     {
         Write-ScreenInfo "Local policy 'Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials with NTLM-only server authentication' is not configured as required" -Type Verbose
         $configOk = $false
     }
 
-    $value = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentials', '1')
-    if ($value -ne '*' -and $value -ne 'TERMSRV/*')
+    if ($gpos.AllowSavedCredentials -ne '*' -and $gpos.AllowSavedCredentials -ne 'TERMSRV/*')
     {
         Write-ScreenInfo "Local policy 'Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials' is not configured as required" -Type Verbose
         $configOk = $false
     }
 
     $value = [GPO.Helper]::GetGroupPolicy($true, 'SOFTWARE\Policies\Microsoft\Windows\CredentialsDelegation\AllowSavedCredentialsWhenNTLMOnly', '1')
-    if ($value -ne '*' -and $value -ne 'TERMSRV/*')
+    if ($gpos.AllowSavedCredentialsWhenNTLMOnly -ne '*' -and $gpos.AllowSavedCredentialsWhenNTLMOnly -ne 'TERMSRV/*')
     {
         Write-ScreenInfo "Local policy 'Computer Configuration -> Administrative Templates -> System -> Credentials Delegation -> Allow Delegating Fresh Credentials with NTLM-only server authentication' is not configured as required" -Type Verbose
         $configOk = $false
     }
 
-    $allowEncryptionOracle = (Get-ItemProperty -Path HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System\CredSSP\Parameters -ErrorAction SilentlyContinue).AllowEncryptionOracle
-    if ($allowEncryptionOracle -ne 2)
+    if ($gpos.AllowEncryptionOracle -ne 2)
     {
         Write-ScreenInfo "AllowEncryptionOracle is set to '$allowEncryptionOracle'. The value should be '2'" -Type Verbose
         $configOk = $false
