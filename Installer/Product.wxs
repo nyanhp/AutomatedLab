@@ -437,7 +437,6 @@
               <Directory Id="InstallFolder_AutomatedLabDefinitionVersion" Name="$(var.AutomatedLabProductVersion)">
                 <Component Id="AutomatedLabDefinitionComponent" Guid="f26e3e50-ed5e-4619-a89a-842c7ca7aa15">
                   <RegistryValue Root="HKLM" Key="Software\[Manufacturer]\[ProductName]" Type="string" Value="AutomatedLabDefinitionComponent"/>
-                  <File Source="$(var.SolutionDir)\AutomatedLabDefinition\AutomatedLabDefinition.Help.xml" />
                   <File Source="$(var.SolutionDir)\AutomatedLabDefinition\AutomatedLabDefinition.psm1" />
                   <File Source="$(var.SolutionDir)\AutomatedLabDefinition\AutomatedLabDefinitionAzureServices.psm1" />
                   <File Source="$(var.SolutionDir)\AutomatedLabDefinition\AutomatedLabDefinitionNetwork.psm1" />
