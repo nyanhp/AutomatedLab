@@ -4,6 +4,7 @@
 )
 
 Push-Location
+	$null = Install-PackageProvider nuget -Force -Required 2.8.5.201
 
 If ($ENV:BHBuildSystem -ne 'AppVeyor')
 {
@@ -18,10 +19,21 @@ If ($ENV:BHBuildSystem -ne 'AppVeyor')
     # Compile Help
     If (-not (Get-Module -List PlatyPs))
     {
-        $null = Install-PackageProvider nuget -Force
         Install-Module PlatyPS -Force -AllowClobber -SkipPublisherCheck
     }
 
+	foreach ($moduleName in (Get-ChildItem -Path $SolutionDir\Help -Directory))
+    {
+        foreach ($language in ($moduleName | Get-ChildItem -Directory))
+        {
+            $ci = try { [cultureinfo]$language.BaseName} catch { }
+            if (-not $ci) {continue}
+
+            $opPath = Join-Path -Path $SolutionDir -ChildPath "$($moduleName.BaseName)\$($language.BaseName)"
+            Write-Host "Generating help XML in $opPath"
+            New-ExternalHelp -Path $language.FullName -OutputPath $opPath
+        }
+    }
     $null = New-ExternalHelp -Path $SolutionDir\AutomatedLab.Common\Help\en-us -OutputPath $SolutionDir\AutomatedLab.Common\AutomatedLab.Common\en-us
 
     Microsoft.PowerShell.Utility\Write-Host 'Creating backup of file AutomatedLab.Common.psd1'
