@@ -102,13 +102,13 @@
             </Directory>
             <Directory Id="InstallFolder_Common" Name="AutomatedLab.Common">
               <Directory Id="InstallFolder_CommonVersion" Name="$(var.AutomatedLabCommonVersion)">
+                <Directory Id="CommonHelp" Name="en-us">
+                  <Component Id="CommonHelpComponent" Guid="9c55a8fc-d3ca-4143-96b1-57edce24dd04">
+                    <File Source="$(var.SolutionDir)AutomatedLab.Common\AutomatedLab.Common\en-us\about_AutomatedLab.Common.help.txt" />
+                    <File Source="$(var.SolutionDir)AutomatedLab.Common\AutomatedLab.Common\en-us\AutomatedLab.Common-help.xml" />
+                  </Component>
+                </Directory>
                 <Directory Id="InstallFolder_CommonCommon" Name="Common">
-                  <Directory Id="CommonHelp" Name="en-us">
-                    <Component Id="CommonHelpComponent" Guid="9c55a8fc-d3ca-4143-96b1-57edce24dd04">
-                      <File Source="$(var.SolutionDir)AutomatedLab.Common\AutomatedLab.Common\en-us\about_AutomatedLab.Common.help.txt" />
-                      <File Source="$(var.SolutionDir)AutomatedLab.Common\AutomatedLab.Common\en-us\AutomatedLab.Common-help.xml" />
-                    </Component>
-                  </Directory>
                   <Directory Id="InstallFolder_CommonCommonPublic" Name="Public">
                     <Component Id="ALCommonComponent1" Guid="8b0287f3-d70a-47e6-a04f-6cc360f33eab">
                       <File Source="$(var.SolutionDir)AutomatedLab.Common\AutomatedLab.Common\Common\Public\Add-AccountPrivilege.ps1" />
