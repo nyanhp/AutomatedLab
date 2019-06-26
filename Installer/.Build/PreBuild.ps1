@@ -5,25 +5,34 @@
 
 Push-Location
 
-Set-Location -Path $SolutionDir\AutomatedLab.Common
-git reset --hard
-git submodule -q update --init --recursive
-git pull origin master
-
-# Compile Common libary
-dotnet build $SolutionDir\AutomatedLab.Common
-
-# Compile Help
-If (-not (Get-Module -List PlatyPs))
+If ($ENV:BHBuildSystem -ne 'AppVeyor')
 {
-    $null = Install-PackageProvider nuget -Force
-    Install-Module PlatyPS -Force -AllowClobber -SkipPublisherCheck
+    Set-Location -Path $SolutionDir\AutomatedLab.Common
+    git reset --hard
+    git submodule -q update --init --recursive
+    git pull origin master
+
+    # Compile Common libary
+    dotnet build $SolutionDir\AutomatedLab.Common
+
+    # Compile Help
+    If (-not (Get-Module -List PlatyPs))
+    {
+        $null = Install-PackageProvider nuget -Force
+        Install-Module PlatyPS -Force -AllowClobber -SkipPublisherCheck
+    }
+
+    $null = New-ExternalHelp -Path $SolutionDir\AutomatedLab.Common\Help\en-us -OutputPath $SolutionDir\AutomatedLab.Common\AutomatedLab.Common\en-us
+
+    Microsoft.PowerShell.Utility\Write-Host 'Creating backup of file AutomatedLab.Common.psd1'
+    Copy-Item -Path $SolutionDir\AutomatedLab.Common\AutomatedLab.Common\AutomatedLab.Common.psd1 -Destination $SolutionDir\AutomatedLab.Common\AutomatedLab.Common\AutomatedLab.Common.psd1.original
+}
+else
+{
+    Remove-Item -Recurse -Path $SolutionDir\AutomatedLab.Common\AutomatedLab.Common -Force
+    Save-Module -Name AutomatedLab -Path .\AutomatedLab.Common -Force
 }
 
-$null = New-ExternalHelp -Path $SolutionDir\AutomatedLab.Common\Help\en-us -OutputPath $SolutionDir\AutomatedLab.Common\AutomatedLab.Common\en-us
-
-Microsoft.PowerShell.Utility\Write-Host 'Creating backup of file AutomatedLab.Common.psd1'
-Copy-Item -Path $SolutionDir\AutomatedLab.Common\AutomatedLab.Common\AutomatedLab.Common.psd1 -Destination $SolutionDir\AutomatedLab.Common\AutomatedLab.Common\AutomatedLab.Common.psd1.original
 Microsoft.PowerShell.Utility\Write-Host 'Creating backup of file Includes.wxi'
 Copy-Item -Path $SolutionDir\Installer\Includes.wxi -Destination $SolutionDir\Installer\Includes.wxi.original
 
@@ -49,12 +58,12 @@ $commonDllPath = Join-Path -Path $SolutionDir -ChildPath 'AutomatedLab.Common\Au
 $dllCorePath = Join-Path -Path (Resolve-Path -Path $dllPath\..).Path -ChildPath 'netcoreapp2.2'
 
 Microsoft.PowerShell.Utility\Write-Host "Locating libraries in $dllPath and $dllCorePath"
-$newContentFull = Get-ChildItem -File -Filter *.dll -Path $dllPath | ForEach-Object { '<File Source="$(var.SolutionDir)LabXml\bin\debug\net462\{0}" Id="{1}" />' -f $_.Name,"full$((New-Guid).Guid -replace '-')" }
-$newContentCore = Get-ChildItem -File -Filter *.dll -Path $dllCorePath | ForEach-Object { '<File Source="$(var.SolutionDir)LabXml\bin\debug\netcoreapp2.2\{0}" Id="{1}" />' -f $_.Name,"core$((New-Guid).Guid -replace '-')" }
+$newContentFull = Get-ChildItem -File -Filter *.dll -Path $dllPath | ForEach-Object { '<File Source="$(var.SolutionDir)LabXml\bin\debug\net462\{0}" Id="{1}" />' -f $_.Name, "full$((New-Guid).Guid -replace '-')" }
+$newContentCore = Get-ChildItem -File -Filter *.dll -Path $dllCorePath | ForEach-Object { '<File Source="$(var.SolutionDir)LabXml\bin\debug\netcoreapp2.2\{0}" Id="{1}" />' -f $_.Name, "core$((New-Guid).Guid -replace '-')" }
 
 Microsoft.PowerShell.Utility\Write-Host "Locating libraries in $commonDllPath and $commonDllCorePath"
-$newContentCommonFull = Get-ChildItem -File -Filter *.dll -Path $commonDllPath | ForEach-Object { '<File Source="$(var.SolutionDir)AutomatedLab.Common\AutomatedLab.Common\lib\full\{0}" Id="{1}" />' -f $_.Name,"full$((New-Guid).Guid -replace '-')" }
-$newContentCommonCore = Get-ChildItem -File -Filter *.dll -Path $commonDllCorePath | ForEach-Object { '<File Source="$(var.SolutionDir)AutomatedLab.Common\AutomatedLab.Common\lib\core\{0}" Id="{1}" />' -f $_.Name,"core$((New-Guid).Guid -replace '-')" }
+$newContentCommonFull = Get-ChildItem -File -Filter *.dll -Path $commonDllPath | ForEach-Object { '<File Source="$(var.SolutionDir)AutomatedLab.Common\AutomatedLab.Common\lib\full\{0}" Id="{1}" />' -f $_.Name, "full$((New-Guid).Guid -replace '-')" }
+$newContentCommonCore = Get-ChildItem -File -Filter *.dll -Path $commonDllCorePath | ForEach-Object { '<File Source="$(var.SolutionDir)AutomatedLab.Common\AutomatedLab.Common\lib\core\{0}" Id="{1}" />' -f $_.Name, "core$((New-Guid).Guid -replace '-')" }
 
 Microsoft.PowerShell.Utility\Write-Host "Creating backup of file product.wxs"
 Copy-Item -Path $SolutionDir\Installer\product.wxs -Destination $SolutionDir\Installer\product.wxs.original
