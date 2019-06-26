@@ -60,7 +60,7 @@ Microsoft.PowerShell.Utility\Write-Host "Version of AutomatedLab.Common is '$alC
 Microsoft.PowerShell.Utility\Write-Host "Writing new 'Includes.wxi' file"
 ('<?xml version="1.0" encoding="utf-8"?><Include Id="VersionNumberInclude"><?define AutomatedLabCommonVersion="{0}" ?><?define AutomatedLabProductVersion="{1}" ?></Include>' -f $alCommonVersion, $alDllVersion.FileVersion) | Out-File -FilePath $SolutionDir\Installer\Includes.wxi -Encoding UTF8
 Microsoft.PowerShell.Utility\Write-Host "Replacing version in 'AutomatedLab.Common.psd1' file"
-(Get-Content -Path $SolutionDir\AutomatedLab.Common\AutomatedLab.Common.psd1 -Raw) -replace "(ModuleVersion([ =]+))(')(?<Version>\d{1,2}\.\d{1,2}\.\d{1,2})", "`$1'$alCommonVersion" | Out-File -FilePath $SolutionDir\AutomatedLab.Common\AutomatedLab.Common.psd1
+(Get-Content -Path $SolutionDir\AutomatedLab.Common\AutomatedLab.Common\AutomatedLab.Common.psd1 -Raw) -replace "(ModuleVersion([ =]+))(')(?<Version>\d{1,2}\.\d{1,2}\.\d{1,2})", "`$1'$alCommonVersion" | Out-File -FilePath $SolutionDir\AutomatedLab.Common\AutomatedLab.Common\AutomatedLab.Common.psd1
 
 Pop-Location
 
