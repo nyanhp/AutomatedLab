@@ -13,7 +13,7 @@ namespace AutomatedLab
         private bool keepFolder;
         private Path isoImage;
         private bool isCustomRole;
-        private SerializableDictionary<string, List<object>> properties;
+        private SerializableDictionary<string, object> properties;
         private bool doNotUseCredSsp;
         private bool asJob;
 
@@ -76,7 +76,7 @@ namespace AutomatedLab
             }
         }
 
-        public SerializableDictionary<string, List<object>> Properties
+        public SerializableDictionary<string, object> Properties
         {
             get { return properties; }
             set { properties = value; }
@@ -96,7 +96,7 @@ namespace AutomatedLab
 
         public PostInstallationActivity()
         {
-            properties = new SerializableDictionary<string, List<object>>();
+            properties = new SerializableDictionary<string, object>();
         }
 
         public override string ToString()
