@@ -1240,7 +1240,7 @@ function Export-LabDefinition
             {
                 $unattendedXmlDefaultContent2012 | Out-File -FilePath (Join-Path -Path $script:lab.Sources.UnattendedXml.Value -ChildPath Unattended2012.xml) -Encoding unicode
             }
-            if ($Script:machines | Where-Object LinuxType -eq 'RedHat')
+            if ($Script:machines | Where-Object LinuxType -match 'RedHat|Ubuntu')
             {
                 $kickstartContent | Out-File -FilePath (Join-Path -Path $script:lab.Sources.UnattendedXml.Value -ChildPath ks.cfg) -Encoding unicode
             }

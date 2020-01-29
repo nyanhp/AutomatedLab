@@ -50,13 +50,17 @@ namespace AutomatedLab
         {
             get
             {
-                if(System.Text.RegularExpressions.Regex.IsMatch(OperatingSystem.OperatingSystemName, "Windows"))
+                if (System.Text.RegularExpressions.Regex.IsMatch(OperatingSystem.OperatingSystemName, "Windows"))
                 {
                     return LinuxType.Unknown;
                 }
                 else if (System.Text.RegularExpressions.Regex.IsMatch(OperatingSystem.OperatingSystemName, "CentOS|Red Hat|Fedora"))
                 {
                     return LinuxType.RedHat;
+                }
+                else if (System.Text.RegularExpressions.Regex.IsMatch(OperatingSystem.OperatingSystemName, "Ubuntu"))
+                {
+                    return LinuxType.Ubuntu;
                 }
 
                 return LinuxType.SuSE;

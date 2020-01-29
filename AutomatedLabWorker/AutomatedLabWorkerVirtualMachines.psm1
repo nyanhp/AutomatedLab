@@ -39,7 +39,7 @@ function New-LWHypervVM
     if ($PSDefaultParameterValues.ContainsKey('*:IsKickstart')) { $PSDefaultParameterValues.Remove('*:IsKickstart') }
     if ($PSDefaultParameterValues.ContainsKey('*:IsAutoYast')) { $PSDefaultParameterValues.Remove('*:IsAutoYast') }
 
-    if ($Machine.OperatingSystemType -eq 'Linux' -and $Machine.LinuxType -eq 'RedHat')
+    if ($Machine.OperatingSystemType -eq 'Linux' -and $Machine.LinuxType -match 'RedHat|Ubuntu')
     {        
         $PSDefaultParameterValues['*:IsKickstart'] = $true
     }
@@ -140,7 +140,7 @@ function New-LWHypervVM
         $ipSettings.Add('EnableAdapterDomainNameRegistration', ([string]($adapter.DnsSuffixInDnsRegistration)).ToLower())
         $ipSettings.Add('DisableDynamicUpdate', ([string](-not $adapter.RegisterInDNS)).ToLower())
         
-        if ($machine.OperatingSystemType -eq 'Linux' -and $machine.LinuxType -eq 'RedHat')
+        if ($machine.OperatingSystemType -eq 'Linux' -and $machine.LinuxType -match 'RedHat|Ubuntu')
         {
             $ipSettings.Add('IsKickstart', $true)
         }
@@ -166,7 +166,7 @@ function New-LWHypervVM
             
     Set-UnattendedComputerName -ComputerName $Machine.Name
     Set-UnattendedAdministratorName -Name $Machine.InstallationUser.UserName
-    Set-UnattendedAdministratorPassword -Password $Machine.InstallationUser.Password    
+    Set-UnattendedAdministratorPassword -Password $Machine.InstallationUser.Password
             
     if ($Machine.ProductKey)
     {
@@ -256,8 +256,8 @@ function New-LWHypervVM
             }
             if ($Machine.OperatingSystemType -eq 'Linux')
             {
-                $parameters['IsKickstart'] = $Machine.LinuxType -eq 'RedHat'
-                $parameters['IsAutoYast'] = $Machine.LinuxType -eq 'Suse'             
+                $parameters['IsKickstart'] = $Machine.LinuxType -match 'RedHat|Ubuntu'
+                $parameters['IsAutoYast'] = $Machine.LinuxType -eq 'Suse'
             }
             
             Set-UnattendedDomain @parameters
@@ -315,7 +315,7 @@ function New-LWHypervVM
         $mountedOsDisk = $systemDisk | Mount-VHD -Passthru
         $mountedOsDisk | Initialize-Disk -PartitionStyle GPT
         $size = 6GB
-        if ($Machine.LinuxType -eq 'RedHat')
+        if ($Machine.LinuxType -match 'RedHat|Ubuntu')
         {
             $size = 100MB
         }
@@ -340,7 +340,7 @@ function New-LWHypervVM
         }
 
         # Copy Unattend-Stuff here
-        if ($Machine.LinuxType -eq 'RedHat')
+        if ($Machine.LinuxType -match 'RedHat|Ubuntu')
         {            
             Export-UnattendedFile -Path (Join-Path -Path $drive.RootDirectory -ChildPath ks.cfg)
         }
@@ -494,7 +494,7 @@ function New-LWHypervVM
     
     Write-ProgressIndicator
 
-    if ( $Machine.OperatingSystemType -eq 'Linux' -and $Machine.LinuxType -eq 'RedHat')
+    if ( $Machine.OperatingSystemType -eq 'Linux' -and $Machine.LinuxType -match 'RedHat|Ubuntu')
     {
         $vm | Add-VMDvdDrive -Path $Machine.OperatingSystem.IsoPath
     }

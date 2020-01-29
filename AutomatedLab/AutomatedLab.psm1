@@ -500,7 +500,7 @@ function Import-Lab
                     {
                         $Path = Join-Path -Path (Get-Lab).Sources.UnattendedXml.Value -ChildPath 'Unattended2012.xml'
                     }
-                    if ($this.OperatingSystemType -eq 'Linux' -and $this.LinuxType -eq 'RedHat')
+                    if ($this.OperatingSystemType -eq 'Linux' -and $this.LinuxType -match 'RedHat|Ubuntu')
                     {
                         $Path = Join-Path -Path (Get-Lab).Sources.UnattendedXml.Value -ChildPath ks.cfg
                     }
@@ -1551,7 +1551,22 @@ function Get-LabAvailableOperatingSystem
             # Unix time stamp...
             $os.PublishedDate = (Get-Date 1970-01-01).AddSeconds($discInfoContent[0])
             $os.Edition = if($content.Variant) {$content.Variant}else{'Server'}
+            $os.Installation = if($content.Variant) {'Client'}else{'Server'}
 
+            $osList.Add($os)
+        }
+
+        $ubuPath = "$letter`:\README.diskdefines"
+        if (Test-Path $ubuPath)
+        {
+            $diskInfoContent = (Get-Content -Path $ubuPath -TotalCount 1) -replace '#define\s+DISKNAME\s+|\s+-\s+Release.*'
+            [version]$versionInfo = ($diskInfoContent -split "\s+")[1]
+
+            $os = New-Object -TypeName AutomatedLab.OperatingSystem($diskInfoContent, $isoFile.FullName)
+            $os.OperatingSystemImageName = $diskInfoContent
+            $os.Size = $isoFile.Length
+            $os.Edition = if ($diskInfoContent -match 'LTS') { 'LTS' } else { 'CB' }
+            $os.Installation = if (($diskInfoContent -split '\s+')[0] -eq 'Ubuntu') {'Client'} else {'Server'}
             $osList.Add($os)
         }
 
