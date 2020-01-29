@@ -14,21 +14,20 @@ function Export-UnattendedKickstartFile
     }
 
     @(
-        'function IsNotInstalled {'
-        'if yum list installed "$@" >/dev/null 2>&1; then'
-        'false'
-        'else'
-        'true'
+        'if egrep --quiet "(RedHat|CentOS|Fedora)" /etc/os-release'
+        'then'
+        '  curl https://packages.microsoft.com/config/rhel/7/prod.repo | sudo tee /etc/yum.repos.d/microsoft.repo'
+        '  yum install -y openssl'
+        '  yum install -y powershell'
+        '  yum install -y omi-psrp-server; fi'
+        'elif egrep --quiet "Ubuntu" /etc/os-release'
+        'then'
+        '  wget -q https://packages.microsoft.com/config/ubuntu/18.04/packages-microsoft-prod.deb'
+        '  dpkg -i packages-microsoft-prod.deb'
+        '  apt-get update'
+        '  add-apt-repository universe'
+        '  apt-get install -y powershell'
         'fi'
-        '}'
-        'curl https://packages.microsoft.com/config/rhel/7/prod.repo | sudo tee /etc/yum.repos.d/microsoft.repo'
-        'yum install -y openssl'
-        'yum install -y powershell'
-        'yum install -y omi-psrp-server'
-        'if IsNotInstalled powershell; then yum install -y powershell; fi'
-        'if IsNotInstalled omi-psrp-server; then yum install -y powershell; fi'
-        'yum list installed "powershell" > /tmp/ksPowerShell'
-        'yum list installed "omi-psrp-server" > /tmp/ksOmi'
     ) | ForEach-Object -Process {
         $idx++
         $script:un.Insert($idx, $_)
