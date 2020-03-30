@@ -17,6 +17,7 @@
 - Removed parameter 'Path' from 'New-LabDefinition' and help
 - Removed parameter 'NoAzurePublishSettingsFile' from 'New-LabDefinition' and help
 - Linux is now a supported host operating system for Azure-based lab environments
+- Modified handling of existing machines so that no error is written when a machine exists
 
 ### Bug Fixes
 - Fixes hardcode reference to a SQL configuration file with the path supplied in SQL role's properties `ConfigurationFile` - Thank you @codaamok !

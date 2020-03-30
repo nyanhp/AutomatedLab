@@ -59,13 +59,13 @@ function New-LabVM
                 Start-LabVM -ComputerName $machine.Name -NoNewline
             }
 
-            if ($result)
+            if ($result.Success)
             {
                 Write-ScreenInfo -Message 'Done' -TaskEnd
             }
             else
             {
-                Write-ScreenInfo -Message "Could not create $($machine.HostType) machine '$machine'" -TaskEnd -Type Error
+                Write-ScreenInfo -Message $result.Reason -TaskEnd -Type Error
             }
         }
         elseif ($machine.HostType -eq 'VMWare')

@@ -18,10 +18,12 @@
 function New-LWHypervVM
 {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseCompatibleCmdlets", "", Justification="Not relevant on Linux")]
-    [Cmdletbinding()]
+    [CmdletBinding()]
+    [OutputType([hashtable])]
     Param (
         [Parameter(Mandatory)]
-        [AutomatedLab.Machine]$Machine
+        [AutomatedLab.Machine]
+        $Machine
     )
 
     $PSBoundParameters.Add('ProgressIndicator', 1) #enables progress indicator
@@ -33,8 +35,11 @@ function New-LWHypervVM
     if (Get-VM -Name $Machine.Name -ErrorAction SilentlyContinue)
     {
         Write-ProgressIndicatorEnd
-        Write-ScreenInfo -Message "The machine '$Machine' does already exist" -Type Warning
-        return $false
+        Write-ScreenInfo -Message "The machine '$Machine' already exists" -Type Warning
+        return @{
+            Success = $true
+            Reason = "The machine '$Machine' already exists"
+        }
     }
 
     if ($PSDefaultParameterValues.ContainsKey('*:IsKickstart')) { $PSDefaultParameterValues.Remove('*:IsKickstart') }
@@ -301,7 +306,10 @@ function New-LWHypervVM
     if (Test-Path -Path $path)
     {
         Write-ScreenInfo -Message "The disk $path does already exist. Disk cannot be created" -Type Warning
-        return $false
+        return @{
+            Success = $false
+            Reason = "The disk $path does already exist. Disk cannot be created"
+        }
     }
 
     Write-ProgressIndicator
@@ -542,6 +550,7 @@ function New-LWHypervVM
                 $file.Decrypt()
             }
         }
+
         Copy-Item -Path "$tempPath\*" -Destination "$vhdVolume\Windows" -Recurse
 
         Remove-Item -Path $tempPath -Recurse
@@ -695,7 +704,10 @@ Stop-Transcript
 
     Write-LogFunctionExit
 
-    return $true
+    return @{
+        Success = $true
+        Reason = "VM $Machine successfully created"
+    }
 }
 #endregion New-LWHypervVM
 
