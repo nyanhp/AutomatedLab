@@ -90,3 +90,57 @@ function Install-LabHyperV
 
     Write-LogFunctionExit
 }
+
+function Connect-LabHyperV
+{
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory,ParameterSetName='NewSession')]
+        [string]
+        $ComputerName,
+
+        [Parameter(ParameterSetName='NewSession')]
+        [pscredential]
+        $Credential,
+
+        [Parameter(ParameterSetName='NewSession')]
+        [Microsoft.Management.Infrastructure.Options.PasswordAuthenticationMechanism]
+        $Authentication,
+
+        [Parameter(ParameterSetName='NewSession')]
+        [string]
+        $Name,
+
+        [Parameter(ParameterSetName='NewSession')]
+        [uint32]
+        $OperationTimeoutSec,
+
+        [Parameter(ParameterSetName='NewSession')]
+        [switch]
+        $SkipTestConnection,
+
+        [Parameter(ParameterSetName='NewSession')]
+        [uint32]
+        $Port,
+
+        [Parameter(ParameterSetName='NewSession')]
+        [Microsoft.Management.Infrastructure.Options.CimSessionOptions]
+        $SessionOption,
+
+        [Parameter(ParameterSetName='ExistingSession')]
+        [CimSession]
+        $Session
+    )
+
+    $cimSession = if ($PSCmdlet.ParameterSetName -eq 'ExistingSession')
+    {
+        $Session
+    }
+    else
+    {
+        New-CimSession @PSBoundParameters
+    }
+
+    $PSDefaultParameterValues.Add('Hyper-V\*:CimSession' = $cimSession)
+}
