@@ -15,7 +15,7 @@
 
     if (-not $adapterAddress)
     {
-        $configurationItem = "network --bootproto=dhcp"
+        $configurationItem = "network --bootproto=dhcp --device={0}" -f $linuxInterfaceName
     }
     else
     {
