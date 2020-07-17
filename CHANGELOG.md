@@ -3,9 +3,15 @@
 ## Unreleased
 <!-- SCROLL DOWN TO ENHANCEMENTS AND BUG FIXES PLEASE -->
 
-### Fixes
+### Enhancements
+
+### Bug Fixes
 
 - Aligned the name of the 'DscMofEncryption' template with its display name
+- Fixed an issue with the boot order of VMs where Linux VMs would wait for
+a long time for PXE boot
+- Fixed an isse with the generation of Kickstart files for RPM-based distributions
+where if the default adapter was used, pwsh was not installed
 
 ## 5.22.0 - 2020-07-10
 

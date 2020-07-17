@@ -683,8 +683,9 @@ Stop-Transcript
     }
     else
     {
-        Set-VMBios -VMName $Machine.ResourceName -StartupOrder VHD,CD,NetworkAdapter
-        
+        $bootorder = Get-VMFirmware -VMName $Machine.ResourceName
+        $newOrder = $bootorder.BootOrder | Where-Object -Property BootType -ne Network
+        Set-VMFirmware -VMName $Machine.ResourceName -BootOrder $newOrder
     }
 
     Write-PSFMessage "Creating snapshot named '$($Machine.ResourceName) - post OS Installation'"
