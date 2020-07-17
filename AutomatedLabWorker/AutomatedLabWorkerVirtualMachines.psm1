@@ -679,7 +679,12 @@ Stop-Transcript
 
     if ($Generation -eq 1)
     {
-        Set-VMBios -VMName $Machine.ResourceName -EnableNumLock
+        Set-VMBios -VMName $Machine.ResourceName -EnableNumLock -StartupOrder IDE,CD,LegacyNetworkAdapter
+    }
+    else
+    {
+        Set-VMBios -VMName $Machine.ResourceName -StartupOrder VHD,CD,NetworkAdapter
+        
     }
 
     Write-PSFMessage "Creating snapshot named '$($Machine.ResourceName) - post OS Installation'"
