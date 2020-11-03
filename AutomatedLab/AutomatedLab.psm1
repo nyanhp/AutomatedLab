@@ -3783,6 +3783,21 @@ function Test-LabHostConnected
 }
 #endregion
 
+#region Test-AutomatedLabPrerequisites
+function Test-AutomatedLabPrerequisites
+{
+    [CmdletBinding()]
+    param ()
+
+    if (-not (Get-InstalledModule -Name Pester -MinimumVersion 5.0 -ErrorAction SilentlyContinue))
+    {
+        Write-ScreenInfo -Message 'Please install Pester 5 to check prerequisites'
+    }
+
+    Invoke-Pester -Path (Get-Module AutomatedLab).ModuleBase/Tools -Output Detailed
+}
+#endregion
+
 #Initialization code
 
 #Register the $LabSources variable

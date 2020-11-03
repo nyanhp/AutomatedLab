@@ -1,4 +1,20 @@
-function New-LWLibVirtVirtualSwitch
+function New-LWLibVirtNetworkSwitch
+{
+    [CmdletBinding()]
+    param
+    (        
+        [Parameter(Mandatory)]
+        [AutomatedLab.VirtualNetwork[]]
+        $VirtualNetwork,
+
+        [switch]
+        $PassThru
+    )
+
+
+}
+
+function Remove-LWLibVirtNetworkSwitch
 {
     [CmdletBinding()]
     param
@@ -12,21 +28,7 @@ function New-LWLibVirtVirtualSwitch
     )
 }
 
-function Remove-LWLibVirtVirtualSwitch
-{
-    [CmdletBinding()]
-    param
-    (        
-        [Parameter(Mandatory)]
-        [AutomatedLab.VirtualNetwork[]]
-        $VirtualNetwork,
-
-        [switch]
-        $PassThru
-    )
-}
-
-function Get-LWLibVirtVirtualSwitch
+function Get-LWLibVirtNetworkSwitch
 {
     [CmdletBinding()]
     param

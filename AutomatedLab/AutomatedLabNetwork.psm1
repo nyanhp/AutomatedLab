@@ -44,6 +44,12 @@ function New-LabNetworkSwitches
         New-LWAzureNetworkSwitch -VirtualNetwork $azureNetworks
     }
 
+    $libVirtNetworks = $data.VirtualNetworks | Where-Object HostType -eq kvm
+    if ($libVirtNetworks )
+    {
+        New-LWLibVirtNetworkSwitch -VirtualNetwork $libVirtNetworks
+    }
+
     Write-PSFMessage 'done'
 
     Write-LogFunctionExit

@@ -14,7 +14,8 @@ namespace AutomatedLab
     {
         HyperV = 1,
         Azure = 2,
-        VMWare = 3
+        VMWare = 3,
+        LibVirt = 4
     }
 
     public enum OperatingSystemType
