@@ -16,6 +16,7 @@
 - Fixed issue with Request-LabCertificate failing when multiple ComputerNames were specified (issue #1073)
 - Improved startup time for Linux VMs by setting boot order to boot from DVD instead of PXE
 - Fixed issue #1081, AD Replication Sites not beingt created
+- Fixing transient CredSSP error on Azure by enabling configurable timeouts for LabCimSession and LabPSSession
 
 ## 5.32.0 (2020-12-31)
 

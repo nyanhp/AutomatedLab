@@ -18,9 +18,9 @@ function New-LabPSSession
 
         [pscredential]$Credential,
 
-        [int]$Retries = 2,
+        [int]$Retries = (Get-LabConfigurationItem -Name NewSessionRetries -Default 2),
 
-        [int]$Interval = 5,
+        [int]$Interval = (Get-LabConfigurationItem -Name NewSessionRetryIntervalInSeconds -Default 5),
 
         [switch]$UseSSL,
 
@@ -797,10 +797,10 @@ function New-LabCimSession
         $Credential,
 
         [int]
-        $Retries = 2,
+        $Retries = (Get-LabConfigurationItem -Name NewSessionRetries -Default 2),
 
         [int]
-        $Interval = 5,
+        $Interval = (Get-LabConfigurationItem -Name NewSessionRetryIntervalInSeconds -Default 5),
 
         [switch]
         $UseSSL
