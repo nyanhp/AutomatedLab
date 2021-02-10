@@ -31,7 +31,7 @@ namespace AutomatedLab
     }
 
     [Flags]
-    public enum Roles : long
+    public enum Roles : ulong
     {
         RootDC = 1,
         FirstChildDC = 2,
@@ -75,7 +75,13 @@ namespace AutomatedLab
         WindowsAdminCenter = 137438953472,
         Scvmm2016 = 274877906944,
         Scvmm2019 = 549755813888,
-        SCVMM = Scvmm2016 | Scvmm2019
+        SCVMM = Scvmm2016 | Scvmm2019,
+        ScomManagement = 1099511627776,
+        ScomConsole = 2199023255552,
+        ScomWebConsole = 4398046511104,
+        ScomReporting = 8796093022208,
+        ScomGateway = 17592186044416,
+        SCOM = ScomManagement | ScomConsole | ScomWebConsole | ScomReporting | ScomGateway
     }
 
     public enum ActiveDirectoryFunctionalLevel
