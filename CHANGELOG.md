@@ -6,6 +6,7 @@
 ### Enhancements
 - Add superseeded updates cleanup to Update-LabIsoImage (Issue #1061)
 - Add Cmdlet Enable-LabInternalRouting to configure routing between networks connected to routing VM
+- Keys for Server 2022 added
 
 ### Fixes
 
@@ -16,6 +17,7 @@
 - Fixed issue with Request-LabCertificate failing when multiple ComputerNames were specified (issue #1073)
 - Improved startup time for Linux VMs by setting boot order to boot from DVD instead of PXE
 - Fixed issue #1081, AD Replication Sites not beingt created
+- No more Pester tests when no roles were deployed
 
 ## 5.32.0 (2020-12-31)
 

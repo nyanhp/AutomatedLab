@@ -28,6 +28,12 @@
             $Lab = Import-Lab -Name $LabName -ErrorAction Stop -NoDisplay -NoValidation -PassThru
         }
 
+        if (-not ($Lab.Machines.Roles).Name)
+        {
+            Write-ScreenInfo -Type Verbose -Message 'Skipping Pester tests since no roles were deployed in the lab'
+            return
+        }
+
         $global:pesterLab = $Lab # No parameters in Pester v5 yet
         $configuration = [PesterConfiguration]::Default
         $configuration.Run.Path = Join-Path -Path $PSCmdlet.MyInvocation.MyCommand.Module.ModuleBase -ChildPath 'internal/tests'
