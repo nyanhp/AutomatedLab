@@ -42,7 +42,7 @@
             $os.OperatingSystemName = $imageInfo.Name
             $os.Size = $imageInfo['Total Bytes']
             $os.Version = '{0}.{1}.{2}.{3}' -f $imageInfo['Major Version'], $imageInfo['Minor Version'], $imageInfo['Build'], $imageInfo['Service Pack Build']
-            $os.PublishedDate = $imageInfo['Creation Time'] -replace '=', ':'
+            $os.PublishedDate = [DateTime]::ParseExact(($imageInfo['Creation Time'] -replace '=', ':' -replace '\s+UTC',''), 'ddd MMM dd HH:mm:ss yyyy', $null)
             $os.Edition = $imageInfo['Edition ID']
             $os.Installation = $imageInfo['Installation Type']
             $os.ImageIndex = $imageInfo.Index

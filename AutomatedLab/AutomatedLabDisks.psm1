@@ -647,7 +647,8 @@ function Mount-LabDiskImage
         }
 
         $image = Get-Item -Path $ImagePath
-        $null = mount -o loop $ImagePath /mnt/automatedlab/$($image.BaseName)
+        $null = New-Item -Path /mnt/automatedlab/$($image.BaseName) -Force -ItemType Directory
+        $null = mount -o loop,ro $ImagePath /mnt/automatedlab/$($image.BaseName)
         [PSCustomObject]@{
             ImagePath   = $ImagePath
             FileSize    = $image.Length
