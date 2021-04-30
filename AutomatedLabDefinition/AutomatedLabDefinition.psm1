@@ -733,7 +733,7 @@ function New-LabDefinition
 
         [switch]$UseStaticMemory = $false,
 
-        [ValidateSet('Azure', 'HyperV', 'VMWare')]
+        [ValidateSet('Azure', 'HyperV', 'LibVirt', 'VMWare')]
         [string]$DefaultVirtualizationEngine,
 
         [switch]$Passthru
