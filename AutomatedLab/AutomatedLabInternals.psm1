@@ -779,7 +779,7 @@ function Get-LabSourcesLocationInternal
         $lab.DefaultVirtualizationEngine
     }
 
-    if ($defaultEngine -eq 'kvm' -or ($IsLinux -and $Local.IsPresent))
+    if ($defaultEngine -eq 'LibVirt' -or ($IsLinux -and $Local.IsPresent))
     {
         if (-not (Get-PSFConfigValue -FullName AutomatedLab.LabSourcesLocation))
         {

@@ -17,7 +17,7 @@
     
     if (-not (Get-Command wiminfo))
     {
-        throw 'wiminfo is not installed. Please use your package manager to install wimtools'
+        throw 'wiminfo is not installed. Please use your package manager to install wimtools or wimlib-utils'
     }
 
     if (Test-Path -Path $standardImagePath)
