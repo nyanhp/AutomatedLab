@@ -11,7 +11,24 @@ function New-LWLibVirtNetworkSwitch
         $PassThru
     )
 
+    Write-LogFunctionEntry
 
+    foreach ($network in $VirtualNetwork)
+    {
+        $ipEntry = [PoshLibVirt.IpEntry]::new()
+        $ipEntry.IpAddress = $network.AddressSpace.IpAddress.AddressAsString
+        $ipEntry.NetworkMask = $network.AddressSpace.Netmask
+
+        $config = New-PoshLibVirtNetworkConfiguration -Name $network.ResourceName -BridgeName $network.ResourceName -IpAddresses $ipEntry
+        $null = New-VirtualNetwork -Network $config
+    }
+
+    if ($PassThru)
+    {
+        Get-LWLibVirtNetworkSwitch -VirtualNetwork $VirtualNetwork
+    }
+
+    Write-LogFunctionExit
 }
 
 function Remove-LWLibVirtNetworkSwitch
@@ -21,11 +38,10 @@ function Remove-LWLibVirtNetworkSwitch
     (        
         [Parameter(Mandatory)]
         [AutomatedLab.VirtualNetwork[]]
-        $VirtualNetwork,
-
-        [switch]
-        $PassThru
+        $VirtualNetwork
     )
+
+    Remove-VirtualNetwork -Name $VirtualNetwork.ResourceName
 }
 
 function Get-LWLibVirtNetworkSwitch
@@ -35,10 +51,9 @@ function Get-LWLibVirtNetworkSwitch
     (        
         [Parameter(Mandatory)]
         [AutomatedLab.VirtualNetwork[]]
-        $VirtualNetwork,
-
-        [switch]
-        $PassThru
+        $VirtualNetwork
     )
+
+    Get-VirtualNetwork -Name $VirtualNetwork.ResourceName -ErrorAction SilentlyContinue
 }
 
