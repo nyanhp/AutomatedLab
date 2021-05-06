@@ -40,7 +40,9 @@
         'AutomatedLabAzureWorkerNetwork.psm1',
         'AutomatedLabAzureWorkerVirtualMachines.psm1',
         'AutomatedLabVMWareWorkerVirtualMachines.psm1',
-        'AutomatedLabVMWareWorkerNetwork.psm1')
+        'AutomatedLabVMWareWorkerNetwork.psm1',
+        'AutomatedLabWorkerLibVirtVirtualMachines.psm1',
+        'AutomatedLabWorkerLibVirtNetwork.psm1')
 
     FileList               = @('AutomatedLabWorker.psm1',
         'AutomatedLabWorkerInternals.psm1',
@@ -51,7 +53,9 @@
         'AutomatedLabAzureWorkerNetwork.psm1',
         'AutomatedLabAzureWorkerVirtualMachines.psm1',
         'AutomatedLabVMWareWorkerVirtualMachines.psm1',
-        'AutomatedLabVMWareWorkerNetwork.psm1')
+        'AutomatedLabVMWareWorkerNetwork.psm1',
+        'AutomatedLabWorkerLibVirtVirtualMachines.psm1',
+        'AutomatedLabWorkerLibVirtNetwork.psm1')
 
     PrivateData            = @{ }
 }

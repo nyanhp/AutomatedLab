@@ -339,6 +339,7 @@ namespace AutomatedLab
         {
             get
             {
+                if (OperatingSystemType.Equals(AutomatedLab.OperatingSystemType.Windows)) {return LinuxType.Unknown;}
                 return (System.Text.RegularExpressions.Regex.IsMatch(OperatingSystemName, "CentOS|Red Hat|Fedora")) ? LinuxType.RedHat : LinuxType.SuSE;
             }
         }
