@@ -78,7 +78,8 @@ function New-LabBaseImages
             }
         }
 
-        $baseDiskPath = Join-Path -Path $lab.Target.Path -ChildPath "BASE_$($os.OperatingSystemName.Replace(' ', ''))_$($os.Version)_$($lab.Target.ReferenceDiskSizeInGB).vhdx"
+        $extension = if ($IsLinux) { 'qcow2' } else { 'vhdx' }
+        $baseDiskPath = Join-Path -Path $lab.Target.Path -ChildPath "BASE_$($os.OperatingSystemName.Replace(' ', ''))_$($os.Version)_$($lab.Target.ReferenceDiskSizeInGB).$extension"
         $os.BaseDiskPath = $baseDiskPath
 
 
@@ -98,24 +99,32 @@ function New-LabBaseImages
         if ($osesProcessed -notcontains $os)
         {
             $osesProcessed += $os
-
-            if (-not (Test-Path $baseDiskPath))
-            {
-                Stop-ShellHWDetectionService
-
-                New-LWReferenceVHDX -IsoOsPath $os.IsoPath `
-                    -ReferenceVhdxPath $baseDiskPath `
-                    -OsName $os.OperatingSystemName `
-                    -ImageName $os.OperatingSystemImageName `
-                    -SizeInGb $lab.Target.ReferenceDiskSizeInGB `
-                    -PartitionStyle $partitionStyle
-
-                $BaseImagesCreated++
-            }
-            else
+            if (Test-Path $baseDiskPath)
             {
                 Write-PSFMessage -Message "The base image $baseDiskPath already exists"
+                continue
             }
+
+            Stop-ShellHWDetectionService
+
+            $baseDiskParam = @{
+                IsoOsPath = $os.IsoPath 
+                ReferenceVhdxPath = $baseDiskPath 
+                OsName = $os.OperatingSystemName 
+                ImageName = $os.OperatingSystemImageName 
+                SizeInGb = $lab.Target.ReferenceDiskSizeInGB 
+                PartitionStyle = $partitionStyle
+            }
+
+            if ($IsLinux)
+            {
+                New-LWReferenceQcow @baseDiskParam
+                $BaseImagesCreated++
+                continue
+            }
+
+            New-LWReferenceVHDX @baseDiskParam
+            $BaseImagesCreated++
         }
         else
         {
@@ -140,6 +149,8 @@ function Stop-ShellHWDetectionService
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseCompatibleCmdlets", "")]
     [CmdletBinding()]
     param ( )
+
+    if ($IsLinux) { return }
 
     Write-LogFunctionEntry
 
@@ -176,6 +187,8 @@ function Start-ShellHWDetectionService
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseCompatibleCmdlets", "")]
     [CmdletBinding()]
     param ( )
+
+    if ($IsLinux) { return }
 
     Write-LogFunctionEntry
 

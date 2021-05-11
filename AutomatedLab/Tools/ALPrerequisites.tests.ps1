@@ -6,6 +6,9 @@
         @{ Package = 'ip' }
         @{ Package = 'bridge' }
         @{ Package = 'route' }
+        @{ Package = 'qemu-utils' }
+        @{ Package = 'guestfs-tools' }
+        @{ Package = 'libguestfs' }
     )
 
     if (-not ($IsLinux -or $IsMacOS))
@@ -73,6 +76,10 @@
 
         It 'Nested virtualization is enabled' {
             (Get-Content -Path /etc/modprobe.d/kvm.conf) -match '^options\s+kvm_(intel|amd)\s+nested=1' | Should -Not -BeNullOrEmpty
+        }
+
+        It 'Network block devices enabled to mount qcow2 images' {
+            lsmod | Select-String -Pattern 'nbd' | Should -Not -BeNullOrEmpty
         }
     }
 
