@@ -642,13 +642,20 @@ function Get-LabInternetFile
         }
     }
 
+    $fullFileName = if (-not (Test-Path -Path $Path)) {
+        "$Path/$(?? { $FileName } { $FileName } { $result.FileName })".TrimEnd('/\')
+    }
+    else
+    {
+        Join-Path -Path $Path -ChildPath (?? { $FileName } { $FileName } { $result.FileName })
+    }
     if ($PassThru)
     {
         New-Object PSObject -Property @{
             Uri = $Uri
             Path = $Path
             FileName = ?? { $FileName } { $FileName } { $result.FileName }
-            FullName = Join-Path -Path $Path -ChildPath (?? { $FileName } { $FileName } { $result.FileName })
+            FullName = $fullFileName
             Length = $result.ContentLength
         }
     }
