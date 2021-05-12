@@ -87,6 +87,26 @@ function Send-File
         return
     }
 
+    if ((Get-Command Copy-Item).Parameters.ContainsKey('ToSession'))
+    {
+        $jobs = foreach ($ses in $Session)
+        {
+            Start-Job -ArgumentList $SourceFilePath,$DestinationFolderPath,$ses -ScriptBlock {
+                param
+                (
+                    $SourceFilePath,
+                    $DestinationFolderPath,
+                    $Session
+                )
+                Copy-Item -ToSession $Session -Path $SourceFilePath -Destination $DestinationFolderPath
+            }
+        }
+
+        $null = $jobs | Wait-Job | Remove-Job
+        Write-Verbose -Message "PSFileTransfer: Finished sending file $SourceFilePath"
+        return
+    }
+
     $sourceFileStream = [System.IO.File]::OpenRead($sourcePath)
 
     for ($position = 0; $position -lt $sourceFileStream.Length; $position += $chunkSize)
@@ -147,6 +167,26 @@ function Receive-File
     $firstChunk = $true
 
     Write-Verbose -Message "PSFileTransfer: Receiving file $SourceFilePath to $DestinationFilePath from $($Session.ComputerName) ($([Math]::Round($chunkSize / 1MB, 2)) MB chunks)"
+
+    if ((Get-Command Copy-Item).Parameters.ContainsKey('FromSession'))
+    {
+        $jobs = foreach ($ses in $Session)
+        {
+            Start-Job -ArgumentList $SourceFilePath,$DestinationFilePath,$ses -ScriptBlock {
+                param
+                (
+                    $SourceFilePath,
+                    $DestinationFilePath,
+                    $Session
+                )
+                Copy-Item -FromSession $Session -Path $SourceFilePath -Destination $DestinationFilePath
+            }
+        }
+
+        $null = $jobs | Wait-Job | Remove-Job
+        Write-Verbose -Message "PSFileTransfer: Finished receiving file $SourceFilePath"
+        return
+    }
 
     $sourceLength = Invoke-Command -Session $Session -ScriptBlock (Get-Command Get-FileLength).ScriptBlock `
         -ArgumentList $SourceFilePath -ErrorAction Stop
@@ -541,7 +581,7 @@ function Copy-LabFileItem
                 $session = New-LabPSSession -ComputerName $machine
                 $destination = if (-not $DestinationFolderPath)
                 {
-                    Join-Path -Path (Get-LabConfigurationItem -Name OsRoot) -ChildPath (Split-Path -Path $p -Leaf)
+                    Join-Path -Path / -ChildPath (Split-Path -Path $p -Leaf)
                 }
                 else
                 {

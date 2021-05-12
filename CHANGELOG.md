@@ -5,6 +5,10 @@
 ### Fixes
 - Fixing issue when `Install-Lab -BaseImages` or `-NetworkSwitches` was used
 - Azure DevOps installation 'failed' with success code 3010 (reboot required).
+- Fixing various issues on Linux
+  - Get-LabInternetFile in Azure labs
+  - TFS deployment
+  - Shell hang in Send-File fixed by using Copy-Item -ToSession if available
 
 ## 5.36.0 (2021-04-27)
 

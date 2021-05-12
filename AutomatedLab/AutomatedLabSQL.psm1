@@ -86,7 +86,7 @@ GO
             Where-Object Name -like 'SQL*').Properties.Keys |
     Where-Object {$_ -ne 'InstallSampleDatabase'})}
 
-    $downloadTargetFolder = "$labSources\SoftwarePackages"
+    $downloadTargetFolder = if ($IsLinux) { "$(Get-LabSourcesLocation -Local)/SoftwarePackages" } else { "$labSources/SoftwarePackages" } 
     $dotnet48DownloadLink = Get-LabConfigurationItem -Name dotnet48DownloadLink
     Write-ScreenInfo -Message "Downloading .net Framework 4.8 from '$dotnet48DownloadLink'"
     $dotnet48InstallFile = Get-LabInternetFile -Uri $dotnet48DownloadLink -Path $downloadTargetFolder -PassThru -ErrorAction Stop
