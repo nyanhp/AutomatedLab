@@ -758,9 +758,27 @@ function Install-Lab
         return
     }
 
+    $hostOsName = if (($IsLinux -or $IsMacOs) -and (Get-Command -Name lsb_release -ErrorAction SilentlyContinue)) 
+    {
+        lsb_release -d -s
+    }
+    elseif (-not ($IsLinux -or $IsMacOs)) # easier than IsWindows, which does not exist in Windows PowerShell...
+    {
+        (Get-CimInstance -ClassName Win32_OperatingSystem).Caption
+    }
+    elseif ($IsLinux -and (Test-Path -Path '/etc/os-release'))
+    {
+        $null = (Get-Content -Raw -Path '/etc/os-release') -cmatch 'NAME=(?<Name>\w+)'
+        $Matches.Name
+    }
+    else
+    {
+        'Unknown'
+    }
+
     try
     {
-        [AutomatedLab.LabTelemetry]::Instance.LabStarted((Get-Lab).Export(), (Get-Module AutomatedLab)[-1].Version, $PSVersionTable.BuildVersion, $PSVersionTable.PSVersion)
+        [AutomatedLab.LabTelemetry]::Instance.LabStarted((Get-Lab).Export(), (Get-Module AutomatedLab)[-1].Version, $PSVersionTable.BuildVersion, $PSVersionTable.PSVersion, $hostOsName)
     }
     catch
     {

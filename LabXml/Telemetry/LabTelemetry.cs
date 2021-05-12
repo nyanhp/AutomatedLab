@@ -75,7 +75,7 @@ namespace AutomatedLab
             }
         }
 
-        public void LabStarted(byte[] labData, string version, string osVersion, string psVersion)
+        public void LabStarted(byte[] labData, string version, string osVersion, string psVersion, string platform="Windows")
         {
             if (!GetEnvironmentVariableAsBool(_telemetryOptInVar, false)) return;
             var lab = Lab.Import(labData);
@@ -87,7 +87,8 @@ namespace AutomatedLab
                 { "version", version},
                 { "hypervisor", lab.DefaultVirtualizationEngine},
                 { "osversion", osVersion},
-                { "psversion", psVersion}
+                { "psversion", psVersion},
+                { "platform", platform}
             };
 
             var metrics = new Dictionary<string, double>
@@ -104,6 +105,7 @@ namespace AutomatedLab
                 $"\r\nhypervisor = {lab.DefaultVirtualizationEngine}" +
                 $"\r\nosversion = {osVersion}" +
                 $"\r\npsversion = {psVersion}" +
+                $"\r\nplatform = {platform}" +
                 $"\r\nmachineCount = {lab.Machines.Count}";
             try
             {
