@@ -75,6 +75,7 @@ function Send-File
 
     $sourcePath = (Resolve-Path $SourceFilePath -ErrorAction SilentlyContinue).Path
     $sourcePath = Convert-Path $sourcePath
+    $destinationFullName = Join-Path -Path $DestinationFolderPath -ChildPath (Split-Path -Path $SourceFilePath -Leaf)
     if (-not $sourcePath)
     {
         Write-Error -Message 'Source file could not be found.'
@@ -96,8 +97,6 @@ function Send-File
 
         $chunk = New-Object -TypeName byte[] -ArgumentList $remaining
         [void]$sourceFileStream.Read($chunk, 0, $remaining)
-
-        $destinationFullName = Join-Path -Path $DestinationFolderPath -ChildPath (Split-Path -Path $SourceFilePath -Leaf)
 
         try
         {
@@ -147,6 +146,17 @@ function Receive-File
     $firstChunk = $true
 
     Write-Verbose -Message "PSFileTransfer: Receiving file $SourceFilePath to $DestinationFilePath from $($Session.ComputerName) ($([Math]::Round($chunkSize / 1MB, 2)) MB chunks)"
+
+    if ($IsLinux -and (Get-Command Copy-Item).Parameters.ContainsKey('FromSession'))
+    {
+        foreach ($ses in $Session)
+        {
+            Copy-Item -FromSession $ses -Path $SourceFilePath -Destination $DestinationFilePath
+        }
+
+        Write-Verbose -Message "PSFileTransfer: Finished receiving file $SourceFilePath"
+        return
+    }
 
     $sourceLength = Invoke-Command -Session $Session -ScriptBlock (Get-Command Get-FileLength).ScriptBlock `
         -ArgumentList $SourceFilePath -ErrorAction Stop
@@ -259,7 +269,8 @@ function Send-Directory
     )
 
     $isCalledRecursivly = (Get-PSCallStack | Where-Object -Property Command -EQ -Value $MyInvocation.InvocationName | Measure-Object | Select-Object -ExpandProperty Count) -gt 1
-    if ($DestinationFolderPath -ne '/' -and -not $DestinationFolderPath.EndsWith('\')) { $DestinationFolderPath = $DestinationFolderPath + '\' }
+    if (-not $IsLinux -and ($DestinationFolderPath -ne '/' -and -not $DestinationFolderPath.EndsWith('\'))) { $DestinationFolderPath = $DestinationFolderPath + '\' }
+    if ($IsLinux -and ($DestinationFolderPath -ne '/' -and -not $DestinationFolderPath.EndsWith('/'))) { $DestinationFolderPath = $DestinationFolderPath + '/' }
 
     if (-not $isCalledRecursivly)
     {
@@ -296,7 +307,7 @@ function Send-Directory
     foreach ($localItem in $localItems)
     {
         $itemSource = Join-Path -Path $SourceFolderPath -ChildPath $localItem.Name
-        $newDestinationFolder = $itemSource.Replace($initialSourceParent, $initialDestinationFolderPath).Replace('\\', '\')
+        $newDestinationFolder = $itemSource.Replace($initialSourceParent, $initialDestinationFolderPath).Replace('\\', '\').Replace('//','/')
 
         if ($localItem.PSIsContainer)
         {
@@ -519,6 +530,20 @@ function Copy-LabFileItem
                     {
                         $DestinationFolderPath
                     }
+
+                    if ($IsLinux -and (Get-Command Copy-Item).Parameters.ContainsKey('ToSession'))
+                    {
+                        if ($session.ApplicationPrivateData.PSVersionTable.PSVersion.Major -le 5 -or $session.ApplicationPrivateData.PSVersionTable.Platform -ne 'Unix')
+                        {
+                            $destination = $destination -replace '^/','C:\'
+                        }
+
+                        Copy-Item -ToSession $session -Path $p -Destination $destination -Force -Recurse
+
+                        Write-Verbose -Message "PSFileTransfer: Finished sending file $SourceFilePath"
+                        return
+                    }
+                
                     try
                     {
                         Send-Directory -SourceFolderPath $p -Session $session -DestinationFolderPath $destination
@@ -541,7 +566,7 @@ function Copy-LabFileItem
                 $session = New-LabPSSession -ComputerName $machine
                 $destination = if (-not $DestinationFolderPath)
                 {
-                    Join-Path -Path (Get-LabConfigurationItem -Name OsRoot) -ChildPath (Split-Path -Path $p -Leaf)
+                    Join-Path -Path / -ChildPath (Split-Path -Path $p -Leaf)
                 }
                 else
                 {

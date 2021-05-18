@@ -30,8 +30,12 @@ namespace AutomatedLab
             TelemetryEnabled = GetEnvironmentVariableAsBool(_telemetryOptInVar, false);
 
             // Initialize EventLog
-            if (Environment.OSVersion.Platform == (PlatformID.Unix | PlatformID.MacOSX)) return;
-            if (!EventLog.SourceExists("AutomatedLab")) EventLog.CreateEventSource("AutomatedLab", "Application");
+            if (Environment.OSVersion.Platform == PlatformID.Unix || Environment.OSVersion.Platform == PlatformID.MacOSX) return;
+            try
+            {
+                if (!EventLog.SourceExists("AutomatedLab")) EventLog.CreateEventSource("AutomatedLab", "Application");
+            }
+            catch { }
         }
 
         // taken from https://github.com/powershell/powershell
@@ -75,7 +79,7 @@ namespace AutomatedLab
             }
         }
 
-        public void LabStarted(byte[] labData, string version, string osVersion, string psVersion)
+        public void LabStarted(byte[] labData, string version, string osVersion, string psVersion, string platform="Windows")
         {
             if (!GetEnvironmentVariableAsBool(_telemetryOptInVar, false)) return;
             var lab = Lab.Import(labData);
@@ -87,7 +91,8 @@ namespace AutomatedLab
                 { "version", version},
                 { "hypervisor", lab.DefaultVirtualizationEngine},
                 { "osversion", osVersion},
-                { "psversion", psVersion}
+                { "psversion", psVersion},
+                { "platform", platform}
             };
 
             var metrics = new Dictionary<string, double>
@@ -104,6 +109,7 @@ namespace AutomatedLab
                 $"\r\nhypervisor = {lab.DefaultVirtualizationEngine}" +
                 $"\r\nosversion = {osVersion}" +
                 $"\r\npsversion = {psVersion}" +
+                $"\r\nplatform = {platform}" +
                 $"\r\nmachineCount = {lab.Machines.Count}";
             try
             {
