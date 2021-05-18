@@ -1757,7 +1757,12 @@ function Test-LabADReady
             }
         }
 
-    } -DoNotUseCredSsp -PassThru -NoDisplay  -ErrorAction SilentlyContinue
+    } -DoNotUseCredSsp -PassThru -NoDisplay -ErrorAction SilentlyContinue -ErrorVariable adReadyError
+
+    if ($adReadyError -and $adReadyError.Exception.TransportMessage -eq 'MI_RESULT_FAILED' -and $adReadyError.Exception.Message -match 'ERROR_WSMAN_INVALID_SELECTORS')
+    {
+        Remove-LabPSSession -ComputerName $machine
+    }
 
     [bool]$adReady
 

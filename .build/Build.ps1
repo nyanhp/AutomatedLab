@@ -27,11 +27,13 @@
                     Write-Verbose -Message "$($moduleName) Installed Version [$($version.ToString())] is outdated. Installing Gallery Version [$($galleryVersion.ToString())]"
 
                     Install-Module -Name $moduleName -Force -SkipPublisherCheck -AllowClobber
+                    if ($moduleName -like 'AutomatedLab*') { continue } # Do not import AL, this messes with our ConfigurationItems later on.
                     Import-Module -Name $moduleName -Force -RequiredVersion $galleryVersion
                 }
                 else
                 {
                     Write-Verbose -Message "Module Installed, Importing $($moduleName)"
+                    if ($moduleName -like 'AutomatedLab*') { continue } # Do not import AL, this messes with our ConfigurationItems later on.
                     Import-Module -Name $moduleName -Force -RequiredVersion $version
                 }
             }
@@ -39,6 +41,7 @@
             {
                 Write-Verbose -Message "$($moduleName) Missing, installing Module"
                 Install-Module -Name $moduleName -Force -AllowClobber
+                if ($moduleName -like 'AutomatedLab*') { continue } # Do not import AL, this messes with our ConfigurationItems later on.
                 Import-Module -Name $moduleName -Force
             }
         }

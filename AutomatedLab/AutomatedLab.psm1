@@ -758,9 +758,27 @@ function Install-Lab
         return
     }
 
+    $hostOsName = if (($IsLinux -or $IsMacOs) -and (Get-Command -Name lsb_release -ErrorAction SilentlyContinue)) 
+    {
+        lsb_release -d -s
+    }
+    elseif (-not ($IsLinux -or $IsMacOs)) # easier than IsWindows, which does not exist in Windows PowerShell...
+    {
+        (Get-CimInstance -ClassName Win32_OperatingSystem).Caption
+    }
+    elseif ($IsLinux -and (Test-Path -Path '/etc/os-release'))
+    {
+        $null = (Get-Content -Raw -Path '/etc/os-release') -cmatch 'NAME=(?<Name>\w+)'
+        $Matches.Name
+    }
+    else
+    {
+        'Unknown'
+    }
+
     try
     {
-        [AutomatedLab.LabTelemetry]::Instance.LabStarted((Get-Lab).Export(), (Get-Module AutomatedLab)[-1].Version, $PSVersionTable.BuildVersion, $PSVersionTable.PSVersion)
+        [AutomatedLab.LabTelemetry]::Instance.LabStarted((Get-Lab).Export(), (Get-Module AutomatedLab)[-1].Version, $PSVersionTable.BuildVersion, $PSVersionTable.PSVersion, $hostOsName)
     }
     catch
     {
@@ -1611,7 +1629,7 @@ function Get-LabAvailableOperatingSystem
         return $osList.ToArray()
     }
 
-    if (-not (Test-IsAdministrator))
+    if (-not ($IsLinux -or $IsMacOs) -and -not (Test-IsAdministrator))
     {
         throw 'This function needs to be called in an elevated PowerShell session.'
     }
@@ -2634,7 +2652,7 @@ function Install-LabSoftwarePackage
             return
         }
 
-        if (Get-Command -Name Unblock-File -ErrorAction SilentlyContinue)
+        if (-not ($IsLinux -or $IsMacOs))
         {
             Unblock-File -Path $Path
         }
@@ -2746,14 +2764,7 @@ function Install-LabSoftwarePackage
     Write-PSFMessage -Message "Starting background job for '$($parameters.ActivityName)'"
 
     $parameters.ScriptBlock = {
-        if ($PSEdition -eq 'core')
-        {
-            Add-Type -Path '/ALLibraries/core/AutomatedLab.Common.dll' -ErrorAction SilentlyContinue
-        }
-        elseif ([System.Environment]::OSVersion.Version -ge '6.3')
-        {
-            Add-Type -Path '/ALLibraries/full/AutomatedLab.Common.dll' -ErrorAction SilentlyContinue
-        }
+        Import-Module -Name AutomatedLab.Common -ErrorAction Stop
 
         if ($installParams.Path.StartsWith('\\') -and (Test-Path /ALAzure))
         {

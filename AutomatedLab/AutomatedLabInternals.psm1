@@ -613,7 +613,7 @@ function Get-LabInternetFile
             }
             else
             {
-                Write-ScreenInfo -Type Erro -Message "Unable to upload file to Azure lab sources - No VM is available and no Azure subscription was added to the lab`r`n
+                Write-ScreenInfo -Type Error -Message "Unable to upload file to Azure lab sources - No VM is available and no Azure subscription was added to the lab`r`n
                 Please at least execute New-LabDefinition and Add-LabAzureSubscription before using Get-LabInternetFile"
                 return
             }
@@ -642,13 +642,21 @@ function Get-LabInternetFile
         }
     }
 
+    $fullFileName = if (-not (Test-Path -Path $Path)) {
+        "$Path/$(?? { $FileName } { $FileName } { $result.FileName })".TrimEnd('/\')
+    }
+    else
+    {
+        Join-Path -Path $Path -ChildPath (?? { $FileName } { $FileName } { $result.FileName })
+    }
+
     if ($PassThru)
     {
         New-Object PSObject -Property @{
             Uri = $Uri
             Path = $Path
             FileName = ?? { $FileName } { $FileName } { $result.FileName }
-            FullName = Join-Path -Path $Path -ChildPath (?? { $FileName } { $FileName } { $result.FileName })
+            FullName = $fullFileName
             Length = $result.ContentLength
         }
     }

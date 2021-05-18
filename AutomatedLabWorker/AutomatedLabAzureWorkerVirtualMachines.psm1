@@ -1223,6 +1223,34 @@ function Initialize-LWAzureVM
             }
         }
 
+        try
+        {
+            #https://docs.microsoft.com/en-us/dotnet/api/system.net.securityprotocoltype?view=netcore-2.0#System_Net_SecurityProtocolType_SystemDefault
+            if ($PSVersionTable.PSVersion.Major -lt 6 -and [Net.ServicePointManager]::SecurityProtocol -notmatch 'Tls12')
+            {
+                Write-Verbose -Message 'Adding support for TLS 1.2'
+                [Net.ServicePointManager]::SecurityProtocol += [Net.SecurityProtocolType]::Tls12
+            }
+        }
+        catch
+        { }
+
+        $resetrequired = try { -not [Net.Dns]::GetHostByName('www.microsoft.com')} catch { $true }
+        if ($resetrequired)
+        {
+            $idx = (Get-NetIPInterface | Where-object {$_.AddressFamily -eq "IPv4" -and $_.InterfaceAlias -like "*Ethernet*"}).ifIndex
+            $before = Get-DnsClientServerAddress -InterfaceIndex $idx -AddressFamily IPv4
+            Set-DnsClientServerAddress -InterfaceIndex $idx -ServerAddresses 1.1.1.1,1.0.0.1
+        }
+
+        $null = Install-PackageProvider -Name Nuget -Force
+        Install-Module AutomatedLab.Common -Force -AllowClobber -Repository PSGallery
+
+        if ($resetrequired)
+        {
+            Set-DnsClientServerAddress -InterfaceIndex $idx -ServerAddresses $before.ServerAddresses
+        }
+
         #region Region Settings Xml
         $regionSettings = @'
 <gs:GlobalizationServices xmlns:gs="urn:longhornGlobalizationUnattend">
@@ -1432,7 +1460,9 @@ function Initialize-LWAzureVM
 
     Wait-LWLabJob -Job $jobs -ProgressIndicator 5 -Timeout 30 -NoDisplay
     Copy-LabFileItem -Path (Get-ChildItem -Path "$((Get-Module -Name AutomatedLab)[0].ModuleBase)\Tools\HyperV\*") -DestinationFolderPath /AL -ComputerName $Machine -UseAzureLabSourcesOnAzureVm $false
-    Copy-LabALCommon -ComputerName $Machine
+    
+    $machinesWithoutLib = $Machine | Where-Object { -not (Invoke-LabCommand -NoDisplay -PassThru -Computer $_ -ScriptBlock { Get-InstalledModule AutomatedLab.Common -WarningAction SilentlyContinue -ErrorAction SilentlyContinue }) }
+    if ($machinesWithoutLib) { Copy-LabALCommon -ComputerName $machinesWithoutLib }
     Write-ScreenInfo -Message 'Finished' -TaskEnd
 
     Write-ScreenInfo -Message 'Stopping all new machines except domain controllers'

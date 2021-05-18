@@ -90,6 +90,14 @@ function New-LabPSSession
             }
 
             $param = @{}
+            if ($IsLinux -or $IsMacOs)
+            {
+                # due to this very, very old issue that is probably never fixed: https://github.com/PowerShell/PowerShell/issues/9323
+                $so = New-PSSessionOption -SkipCACheck -SkipCNCheck
+                $so.OperationTimeout = New-TimeSpan -Hours 4
+                $so.IdleTimeout = New-TimeSpan -Hours 2
+                $param['SessionOption'] = $so
+            }
             $param.Add('Name', "$($m)_$([guid]::NewGuid())")
             $param.Add('Credential', $cred)
             $param.Add('UseSSL', $false)
@@ -158,7 +166,7 @@ function New-LabPSSession
             if ($m.OperatingSystemType -eq 'Linux')
             {
                 Set-Item -Path WSMan:\localhost\Client\Auth\Basic -Value $true -Force
-                $param['SessionOption'] = New-PSSessionOption -SkipCACheck -SkipCNCheck -SkipRevocationCheck
+                $param['SessionOption'] = New-PSSessionOption -SkipCACheck -SkipCNCheck
                 $param['UseSSL'] = $true
                 $param['Port'] = 5986
                 $param['Authentication'] = 'Basic'

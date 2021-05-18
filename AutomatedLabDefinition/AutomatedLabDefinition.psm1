@@ -749,6 +749,11 @@ function New-LabDefinition
     {
         (Get-CimInstance -ClassName Win32_OperatingSystem).Caption
     }
+    elseif ($IsLinux -and (Test-Path -Path '/etc/os-release'))
+    {
+        $null = (Get-Content -Raw -Path '/etc/os-release') -cmatch 'NAME=(?<Name>\w+)'
+        $Matches.Name
+    }
     else
     {
         'Unknown'

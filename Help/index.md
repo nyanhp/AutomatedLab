@@ -70,6 +70,8 @@ Apart from the module itself, your system needs to meet the following requiremen
 - Tested on Fedora and Ubuntu, or any OS capable of running PowerShell
 - PowerShell Core 6+
 - gss-ntlmssp to enable remoting (*mandatory - no remoting, no way for AutomatedLab to do its thing*)
+  - You might find it helpful to `Install-Module -Name PSWSMan -Force; Install-WSMan` on some distributions.
+    Especially very new ones where the PowerShell release might still reference outdated dependencies
 - IP and route commands available
 - **Azure subscription**
   - At the moment, AutomatedLab only works using Azure.

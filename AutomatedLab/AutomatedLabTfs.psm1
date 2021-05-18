@@ -292,8 +292,7 @@ function Install-LabBuildWorker
     }
 
     $buildWorkerUri = Get-LabConfigurationItem -Name BuildAgentUri
-    $buildWorkerPath = Join-Path -Path $labsources -ChildPath Tools\TfsBuildWorker.zip
-    $download = Get-LabInternetFile -Uri $buildWorkerUri -Path $buildWorkerPath -PassThru
+    $download = Get-LabInternetFile -Uri $buildWorkerUri -Path "$labsources/Tools/TfsBuildWorker.zip" -PassThru
     Copy-LabFileItem -ComputerName $buildWorkers -Path $download.Path
 
     $installationJobs = @()
@@ -364,7 +363,7 @@ function Install-LabBuildWorker
 
         [string]$machineName = $tfsServer
 
-        if ((Get-Lab).DefaultVirtualizationEngine -eq 'Azure' -and -not ($tfsServer.Roles.Name -eq 'AzDevOps' -and $tfsServer.SkipDeployment))
+        if ($tfsserver -ne 'dev.azure.com' -and (Get-Lab).DefaultVirtualizationEngine -eq 'Azure' -and -not ($tfsServer.Roles.Name -eq 'AzDevOps' -and $tfsServer.SkipDeployment))
         {
             $tfsPort = (Get-LabAzureLoadBalancedPort -DestinationPort $tfsPort -ComputerName $tfsServer -ErrorAction SilentlyContinue).Port
             $machineName = $tfsServer.AzureConnectionInfo.DnsName
