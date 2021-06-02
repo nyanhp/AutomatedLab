@@ -86,13 +86,6 @@ ALTER DATABASE [DSC] SET QUERY_STORE = OFF
 GO
 USE [DSC]
 GO
-/****** Object:  User [DSCPull01$]    Script Date: 07.04.2021 16:59:54 ******/
-CREATE USER [DSCPull01$] FOR LOGIN [contoso\DSCPull01$] WITH DEFAULT_SCHEMA=[db_datareader]
-GO
-ALTER ROLE [db_datareader] ADD MEMBER [DSCPull01$]
-GO
-ALTER ROLE [db_datawriter] ADD MEMBER [DSCPull01$]
-GO
 /****** Object:  UserDefinedFunction [dbo].[Split]    Script Date: 07.04.2021 16:59:54 ******/
 SET ANSI_NULLS ON
 GO
