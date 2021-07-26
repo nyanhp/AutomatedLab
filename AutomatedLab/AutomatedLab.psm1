@@ -3325,32 +3325,42 @@ function Set-LabDefaultOperatingSystem
         [string]$Version
     )
 
-    if (Get-LabDefinition)
-    {
-        if ($Version)
-        {
-            $os = Get-LabAvailableOperatingSystem | Where-Object {$_.OperatingSystemName -eq $OperatingSystem -and $_.Version -eq $OperatingSystemVersion}
-        }
-        else
-        {
-            $os = Get-LabAvailableOperatingSystem | Where-Object {$_.OperatingSystemName -eq $OperatingSystem}
-            if ($os.Count -gt 1)
-            {
-                $os = $os | Sort-Object Version -Descending | Select-Object -First 1
-                Write-ScreenInfo "The operating system '$OperatingSystem' is available multiple times. Choosing the one with the highest version ($($os.Version)) as default operating system" -Type Warning
-            }
-        }
+    $definition = Get-LabDefinition -ErrorAction SilentlyContinue
+    if (-not $definition) { throw 'No lab defined. Please call New-LabDefinition first before calling Set-LabDefaultOperatingSystem.' }
 
-        if (-not $os)
-        {
-            throw "The operating system '$OperatingSystem' could not be found in the available operating systems. Call 'Get-LabAvailableOperatingSystem' to get a list of operating systems available to the lab."
-        }
-        (Get-LabDefinition).DefaultOperatingSystem = $os
+    $param = @{
+        Azure = $definition.DefaultVirtualizationEngine -eq 'Azure'
+        ErrorAction = 'SilentlyContinue'
+    }
+
+    if ($definition.DefaultVirtualizationEngine -eq 'Azure')
+    {
+        $param['Location'] = $definition.AzureSettings.DefaultLocation.DisplayName
+    }
+
+    $osList = Get-LabAvailableOperatingSystem @param -UseOnlyCache
+
+    if (-not $osList) { $osList = Get-LabAvailableOperatingSystem @param }
+
+    if ($Version)
+    {
+        $os = $osList | Where-Object {$_.OperatingSystemName -eq $OperatingSystem -and $_.Version -eq $OperatingSystemVersion}
     }
     else
     {
-        throw 'No lab defined. Please call New-LabDefinition first before calling Set-LabDefaultOperatingSystem.'
+        $os = $osList | Where-Object {$_.OperatingSystemName -eq $OperatingSystem}
+        if ($os.Count -gt 1)
+        {
+            $os = $os | Sort-Object Version -Descending | Select-Object -First 1
+            Write-ScreenInfo "The operating system '$OperatingSystem' is available multiple times. Choosing the one with the highest version ($($os.Version)) as default operating system" -Type Warning
+        }
     }
+
+    if (-not $os)
+    {
+        throw "The operating system '$OperatingSystem' could not be found in the available operating systems. Call 'Get-LabAvailableOperatingSystem' to get a list of operating systems available to the lab."
+    }
+    $definition.DefaultOperatingSystem = $os
 }
 #endregion Set-LabDefaultOperatingSystem
 
@@ -3370,7 +3380,7 @@ function Set-LabDefaultVirtualizationEngine
     }
     else
     {
-        throw 'No lab defined. Please call New-LabDefinition first before calling Set-LabDefaultOperatingSystem.'
+        throw 'No lab defined. Please call New-LabDefinition first before calling Set-LabDefaultVirtualizationEngine.'
     }
 }
 #endregion Set-LabDefaultVirtualizationEngine

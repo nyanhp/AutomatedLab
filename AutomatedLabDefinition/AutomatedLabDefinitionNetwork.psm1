@@ -316,7 +316,7 @@ function New-LabNetworkAdapterDefinition
 
     if (-not (Get-LabDefinition))
     {
-        throw 'No lab defined. Please call New-LabDefinition first before calling Set-LabDefaultOperatingSystem.'
+        throw 'No lab defined. Please call New-LabDefinition first before calling New-LabNetworkAdapterDefinition.'
     }
 
     $adapter = New-Object -TypeName AutomatedLab.NetworkAdapter

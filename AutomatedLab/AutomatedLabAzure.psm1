@@ -104,7 +104,7 @@ function Add-LabAzureSubscription
 
     if (-not $script:lab)
     {
-        throw 'No lab defined. Please call New-LabDefinition first before calling Set-LabDefaultOperatingSystem.'
+        throw 'No lab defined. Please call New-LabDefinition first before calling Add-LabAzureSubscription.'
     }
 
     $null = Test-LabAzureModuleAvailability -ErrorAction Stop

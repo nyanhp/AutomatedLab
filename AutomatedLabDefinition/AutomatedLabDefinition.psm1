@@ -1985,11 +1985,26 @@ function Add-LabMachineDefinition
 
         if (-not $OperatingSystem)
         {
-            $os = Get-LabAvailableOperatingSystem -UseOnlyCache -NoDisplay | Where-Object -Property OperatingSystemType -eq 'Windows' | Sort-Object Version | Select-Object -Last 1
+            $param = @{
+                UseOnlyCache = $true
+                NoDisplay = $true
+            }
 
-            if ($null -ne $os)
+            if ($script:lab.DefaultVirtualizationEngine -eq 'Azure')
             {
-                Write-ScreenInfo -Message "No operating system specified. Assuming you want $os ($(Split-Path -Leaf -Path $os.IsoPath))."
+                $param.Azure = $true
+                $param.Location = $script:lab.AzureSettings.DefaultLocation.DisplayName
+            }
+            $os = Get-LabAvailableOperatingSystem @param | Where-Object -Property OperatingSystemType -eq 'Windows' | Sort-Object Version | Select-Object -Last 1
+
+            if ($os)
+            {
+                $osHint = if ($script:lab.DefaultVirtualizationEngine -eq 'Azure') {
+                    "Azure image name $($os.AzureImageName)"
+                } else {
+                    "ISO file name $(Split-Path -Leaf -Path $os.IsoPath)"
+                }
+                Write-ScreenInfo -Message "No operating system specified. Assuming you want $os ."
                 $OperatingSystem = $os
             }
             else
