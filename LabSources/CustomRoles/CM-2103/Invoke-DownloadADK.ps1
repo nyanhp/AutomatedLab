@@ -14,104 +14,24 @@ Param (
 
 Write-ScreenInfo -Message "Starting ADK and WinPE download process" -TaskStart
 
-#region ADK installer
-$ADKExePath = Join-Path -Path $labSources -ChildPath "SoftwarePackages\adksetup.exe"
+$adkFile = Get-LabInternetFile -Uri $AdkDownloadURL -Path $labsources\SoftwarePackages -FileName adk.exe -PassThru -NoDisplay
+$adkpeFile = Get-LabInternetFile -Uri $WinPEDownloadURL -Path $labsources\SoftwarePackages -FileName adkpe.exe -PassThru -NoDisplay
 
-Write-ScreenInfo -Message ("Downloading '{0}' to '{1}'" -f (Split-Path $ADKExePath -Leaf), (Split-Path $AdkExePath -Parent)) -TaskStart
-
-if (Test-Path -Path $ADKExePath) {
-    Write-ScreenInfo -Message ("File already exists, skipping the download. Delete if you want to download again." -f $ADKExePath)
-}
-
-try {
-    $ADKExeObj = Get-LabInternetFile -Uri $AdkDownloadURL -Path (Split-Path -Path $ADKExePath -Parent) -FileName (Split-Path -Path $ADKExePath -Leaf) -PassThru -ErrorAction "Stop" -ErrorVariable "GetLabInternetFileErr"
-}
-catch {
-    $Message = "Failed to download from '{0}' ({1})" -f $AdkDownloadURL, $GetLabInternetFileErr.ErrorRecord.Exception.Message
-    Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
-    throw $Message
-}
-
-Write-ScreenInfo -Message "Activity done" -TaskEnd
-#endregion
-
-#region ADK files
-Write-ScreenInfo -Message ("Downloading ADK files to '{0}'" -f $AdkDownloadPath) -TaskStart
-
-if (-not (Test-Path -Path $AdkDownloadPath))
+if ($(Get-Lab).DefaultVirtualizationEngine -eq 'Azure')
 {
-    $pArgs = "/quiet /layout {0}" -f $AdkDownloadPath
-    try {
-        $p = Start-Process -FilePath $ADKExeObj.FullName -ArgumentList $pArgs -PassThru -ErrorAction "Stop" -ErrorVariable "StartProcessErr"
-    }
-    catch {
-        $Message = "Failed to initiate download of ADK files to '{0}' ({1})" -f $AdkDownloadPath, $StartProcessErr.ErrorRecord.Exception.Message
-        Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
-        throw $Message
-    }
-    Write-ScreenInfo -Message "Downloading"
-    while (-not $p.HasExited) {
-        Write-ScreenInfo -Message '.' -NoNewLine
-        Start-Sleep -Seconds 10
-    }
-    Write-ScreenInfo -Message '.'
+    Install-LabSoftwarePackage -Path $adkFile.FullName -ComputerName $ComputerName -CommandLine '/quiet /layout c:\ADKoffline' -NoDisplay
+    Install-LabSoftwarePackage -Path $adkpeFile.FullName -ComputerName $ComputerName -CommandLine '/quiet /layout c:\ADKPEoffline' -NoDisplay
 }
 else
 {
-    Write-ScreenInfo -Message ("Directory already exist, skipping the download. Delete the directory if you want to download again." -f $AdkDownloadPath)
+    Start-Process -FilePath $adkFile.FullName -ArgumentList "/quiet /layout $(Join-Path (Get-LabSourcesLocation -Local) Tools/ADKoffline)" -Wait -NoNewWindow
+    Start-Process -FilePath $adkpeFile.FullName -ArgumentList " /quiet /layout $(Join-Path (Get-LabSourcesLocation -Local) Tools/ADKPEoffline)" -Wait -NoNewWindow
+    Copy-LabFileItem -Path (Join-Path (Get-LabSourcesLocation -Local) Tools/ADKoffline) -ComputerName $ComputerName
+    Copy-LabFileItem -Path (Join-Path (Get-LabSourcesLocation -Local) Tools/ADKPEoffline) -ComputerName $ComputerName
 }
 
-Write-ScreenInfo -Message "Activity done" -TaskEnd
-#endregion
-
-#region ADK installer
-$WinPEExePath = Join-Path -Path $labSources -ChildPath "SoftwarePackages\adkwinpesetup.exe"
-
-Write-ScreenInfo -Message ("Downloading '{0}' to '{1}'" -f (Split-Path $WinPEExePath -Leaf), (Split-Path $WinPEExePath -Parent)) -TaskStart
-
-if (Test-Path -Path $WinPEExePath) {
-    Write-ScreenInfo -Message ("File already exists, skipping the download. Delete if you want to download again." -f $WinPEExePath)
-}
-
-try {
-    $WinPESetup = Get-LabInternetFile -Uri $WinPEDownloadURL -Path (Split-Path -Path $WinPEExePath -Parent) -FileName (Split-Path -Path $WinPEExePath -Leaf) -PassThru -ErrorAction "Stop" -ErrorVariable "GetLabInternetFileErr"
-}
-catch {
-    $Message = "Failed to download from '{0}' ({1})" -f $WinPEDownloadURL, $GetLabInternetFileErr.ErrorRecord.Exception.Message
-    Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
-    throw $Message
-}
-
-Write-ScreenInfo -Message "Activity done" -TaskEnd
-#endregion
-
-#region WinPE files
-Write-ScreenInfo -Message ("Downloading WinPE files to '{0}'" -f $WinPEDownloadPath) -TaskStart
-
-if (-not (Test-Path -Path $WinPEDownloadPath))
-{
-    try {
-        $p = Start-Process -FilePath $WinPESetup.FullName -ArgumentList "/quiet /layout $WinPEDownloadPath" -PassThru -ErrorAction "Stop" -ErrorVariable "StartProcessErr"
-    }
-    catch {
-        $Message = "Failed to initiate download of WinPE files to '{0}' ({1})" -f $WinPEDownloadPath, $StartProcessErr.ErrorRecord.Exception.Message
-        Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
-        throw $Message
-    }
-    Write-ScreenInfo -Message "Downloading"
-    while (-not $p.HasExited) {
-        Write-ScreenInfo -Message '.' -NoNewLine
-        Start-Sleep -Seconds 10
-    }
-    Write-ScreenInfo -Message '.'
-}
-else
-{
-    Write-ScreenInfo -Message ("Directory already exists, skipping the download. Delete the directory if you want to download again." -f $WinPEDownloadPath)
-}
-
-Write-ScreenInfo -Message "Activity done" -TaskEnd
-#endregion
+Install-LabSoftwarePackage -LocalPath C:\ADKOffline\adksetup.exe -ComputerName $ComputerName -CommandLine '/norestart /q /ceip off /features OptionId.DeploymentTools OptionId.UserStateMigrationTool OptionId.ImagingAndConfigurationDesigner' -NoDisplay
+Install-LabSoftwarePackage -LocalPath C:\ADKPEOffline\adkwinpesetup.exe -ComputerName $ComputerName -CommandLine '/norestart /q /ceip off /features OptionId.WindowsPreinstallationEnvironment' -NoDisplay
 
 # Workaround because Write-Progress doesn't yet seem to clear up from Get-LabInternetFile
 Write-Progress -Activity * -Completed

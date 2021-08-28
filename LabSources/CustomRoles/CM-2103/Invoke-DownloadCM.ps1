@@ -13,15 +13,14 @@
 )
 
 Write-ScreenInfo -Message "Starting Configuration Manager and prerequisites download process" -TaskStart
+$VMInstallDirectory = 'C:\Install'
+$VMCMBinariesDirectory = "{0}\CM-{1}" -f $VMInstallDirectory, $Branch
+$VMCMPreReqsDirectory = "{0}\CM-PreReqs-{1}" -f $VMInstallDirectory, $Branch
 
 #region CM binaries
-$CMZipPath = "{0}\SoftwarePackages\{1}" -f $labSources, ((Split-Path $CMDownloadURL -Leaf) -replace "\.exe$", ".zip")
+$CMZipPath = "{0}\SoftwarePackages\{1}" -f $labsources, ((Split-Path $CMDownloadURL -Leaf) -replace "\.exe$", ".zip")
 
 Write-ScreenInfo -Message ("Downloading '{0}' to '{1}'" -f (Split-Path $CMZipPath -Leaf), (Split-Path $CMZipPath -Parent)) -TaskStart
-
-if (Test-Path -Path $CMZipPath) {
-    Write-ScreenInfo -Message ("File already exists, skipping the download. Delete if you want to download again." -f (Split-Path $CMZipPath -Leaf))
-}
 
 try {
     $CMZipObj = Get-LabInternetFile -Uri $CMDownloadURL -Path (Split-Path -Path $CMZipPath -Parent) -FileName (Split-Path -Path $CMZipPath -Leaf) -PassThru -ErrorAction "Stop" -ErrorVariable "GetLabInternetFileErr"
@@ -38,21 +37,27 @@ Write-ScreenInfo -Message "Activity done" -TaskEnd
 #region Extract CM binaries
 Write-ScreenInfo -Message ("Extracting '{0}' to '{1}'" -f (Split-Path $CMZipPath -Leaf), $CMBinariesDirectory) -TaskStart
 
-if (-not (Test-Path -Path $CMBinariesDirectory))
-{
-    try {
+try {
+    if ((Get-Lab).DefaultVirtualizationEngine -eq 'Azure')
+    {
+        Invoke-LabCommand -Computer $ComputerName -ScriptBlock {    
+            $null = mkdir -Force $VMCMBinariesDirectory        
+            Expand-Archive -Path $CMZipObj.FullName -DestinationPath $VMCMBinariesDirectory -Force
+        } -Variable (Get-Variable VMCMBinariesDirectory,CMZipObj)
+    }
+    else
+    {
         Expand-Archive -Path $CMZipObj.FullName -DestinationPath $CMBinariesDirectory -Force -ErrorAction "Stop" -ErrorVariable "ExpandArchiveErr"
+        Copy-LabFileItem -Path $CMBinariesDirectory/* -Destination $VMCMBinariesDirectory -ComputerName $ComputerName -Recurse
     }
-    catch {
-        $Message = "Failed to initiate extraction to '{0}' ({1})" -f $CMBinariesDirectory, $ExpandArchiveErr.ErrorRecord.Exception.Message
-        Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
-        throw $Message
-    }
+        
 }
-else
-{
-    Write-ScreenInfo -Message ("Directory already exists, skipping the extraction. Delete the directory if you want to extract again." -f $CMBinariesDirectory)
+catch {
+    $Message = "Failed to initiate extraction to '{0}' ({1})" -f $CMBinariesDirectory, $ExpandArchiveErr.ErrorRecord.Exception.Message
+    Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
+    throw $Message
 }
+
 
 Write-ScreenInfo -Message "Activity done" -TaskEnd
 #endregion
@@ -62,27 +67,26 @@ Write-ScreenInfo -Message ("Downloading prerequisites to '{0}'" -f $CMPreReqsDir
 
 switch ($Branch) {
     "CB" {
-        if (-not (Test-Path -Path $CMPreReqsDirectory))
+        if ((Get-Lab).DefaultVirtualizationEngine -eq 'Azure')
         {
-            try {
-                $p = Start-Process -FilePath $CMBinariesDirectory\SMSSETUP\BIN\X64\setupdl.exe -ArgumentList "/NOUI", $CMPreReqsDirectory -PassThru -ErrorAction "Stop" -ErrorVariable "StartProcessErr"
-            }
-            catch {
-                $Message = "Failed to initiate download of CM pre-req files to '{0}' ({1})" -f $CMPreReqsDirectory, $StartProcessErr.ErrorRecord.Exception.Message
-                Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
-                throw $Message
-            }
-            Write-ScreenInfo -Message "Downloading"
-            while (-not $p.HasExited) {
-                Write-ScreenInfo '.' -NoNewLine
-                Start-Sleep -Seconds 10
-            }
-            Write-ScreenInfo -Message '.'
+            Install-LabSoftwarePackage -ComputerName $ComputerName -LocalPath $VMCMBinariesDirectory\SMSSETUP\BIN\X64\setupdl.exe -CommandLine "/NOUI $VMCMPreReqsDirectory" -UseShellExecute -AsScheduledJob
+            break       
         }
-        else
-        {
-            Write-ScreenInfo -Message ("Directory already exists, skipping the download. Delete the directory if you want to download again." -f $CMPreReqsDirectory)
-        }        
+        try {
+            $p = Start-Process -FilePath $CMBinariesDirectory\SMSSETUP\BIN\X64\setupdl.exe -ArgumentList "/NOUI", $CMPreReqsDirectory -PassThru -ErrorAction "Stop" -ErrorVariable "StartProcessErr"
+        }
+        catch {
+            $Message = "Failed to initiate download of CM pre-req files to '{0}' ({1})" -f $CMPreReqsDirectory, $StartProcessErr.ErrorRecord.Exception.Message
+            Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
+            throw $Message
+        }
+        Write-ScreenInfo -Message "Downloading"
+        while (-not $p.HasExited) {
+            Write-ScreenInfo '.' -NoNewLine
+            Start-Sleep -Seconds 10
+        }
+        Copy-LabFileItem -Path $CMPreReqsDirectory/* -Destination $VMCMPreReqsDirectory -Recurse -ComputerName $ComputerName
+        Write-ScreenInfo -Message '.'
     }
     "TP" {
         $Messages = @(

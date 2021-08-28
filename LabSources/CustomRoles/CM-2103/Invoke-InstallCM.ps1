@@ -79,9 +79,9 @@ function Install-CMSite {
     $CMServer = Get-LabVM -ComputerName $CMServerName
     $CMServerFqdn = $CMServer.FQDN
     $DCServerName = Get-LabVM -Role RootDC | Where-Object { $_.DomainName -eq  $CMServer.DomainName } | Select-Object -ExpandProperty Name
-    $downloadTargetDirectory = "{0}\SoftwarePackages" -f $labSources
+    $downloadTargetDirectory = "{0}\SoftwarePackages" -f $(Get-LabSourcesLocation -Local)
     $VMInstallDirectory = "C:\Install"
-    $LabVirtualNetwork = Get-LabVirtualNetwork | Where-Object { $_.Name -eq $ALLabName } | Select-Object -ExpandProperty "AddressSpace"
+    $LabVirtualNetwork = (Get-Lab).VirtualNetworks.Where({$_.ResourceName -eq $ALLabName}).AddressSpace
     $CMBoundaryIPRange = "{0}-{1}" -f $LabVirtualNetwork.FirstUsable.AddressAsString, $LabVirtualNetwork.LastUsable.AddressAsString
     $VMCMBinariesDirectory = "{0}\CM-{1}" -f $VMInstallDirectory, $Branch
     $VMCMPreReqsDirectory = "{0}\CM-PreReqs-{1}" -f $VMInstallDirectory, $Branch
@@ -226,6 +226,24 @@ function Install-CMSite {
     $CMSetupConfigIni = "{0}\ConfigurationFile-CM.ini" -f $downloadTargetDirectory
     
     ConvertTo-Ini -Content $CMSetupConfig -SectionTitleKeyName "Title" | Out-File -FilePath $CMSetupConfigIni -Encoding "ASCII" -ErrorAction "Stop"
+    # Put CM ini file in same location as SQL ini, just for consistency. Placement of SQL ini from SQL role isn't configurable.
+    $Path = "{0}\ConfigurationFile-CM.ini" -f $downloadTargetDirectory
+    switch -Regex ($Path) {
+        "Configurationfile-CM\.ini$" {
+            $TargetDir = "C:\"
+        }
+        default {
+            $TargetDir = $VMInstallDirectory
+        }
+    }
+    try {
+        Copy-LabFileItem -Path $Path -DestinationFolderPath $TargetDir
+    }
+    catch {
+        $Message = "Failed to copy '{0}' to '{1}' on server '{2}' ({2})" -f $Path, $TargetDir, $CMServerName, $CopyLabFileItem.Exception.Message
+        Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
+        throw $Message
+    }
     #endregion
     
     #region Pre-req checks
@@ -257,42 +275,6 @@ function Install-CMSite {
     if ($InstalledSite.SiteCode -eq $CMSiteCode) {
         Write-ScreenInfo -Message ("Site '{0}' already installed on '{1}', skipping installation" -f $CMSiteCode, $CMServerName) -Type "Warning" -TaskEnd
         return
-    }
-    
-    if (-not (Test-Path -Path "$downloadTargetDirectory\ADK")) {
-        $Message = "ADK Installation files are not located in '{0}\ADK'" -f $downloadTargetDirectory
-        Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
-        throw $Message
-    }
-    else {
-        Write-ScreenInfo -Message ("Found ADK directory '{0}\ADK'" -f $downloadTargetDirectory)
-    }
-
-    if (-not (Test-Path -Path "$downloadTargetDirectory\WinPE")) {
-        $Message = "WinPE Installation files are not located in '{0}\WinPE'" -f $downloadTargetDirectory
-        Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
-        throw $Message
-    }
-    else {
-        Write-ScreenInfo -Message ("Found WinPE directory '{0}\WinPE'" -f $downloadTargetDirectory)
-    }
-
-    if (-not (Test-Path -Path $CMBinariesDirectory)) {
-        $Message = "CM installation files are not located in '{0}'" -f $CMBinariesDirectory
-        Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
-        throw $Message
-    }
-    else {
-        Write-ScreenInfo -Message ("Found CM install directory in '{0}'" -f $CMBinariesDirectory)
-    }
-
-    if (-not (Test-Path -Path $CMPreReqsDirectory)) {
-        $Message = "CM prerequisite directory does not exist '{0}'" -f $CMPreReqsDirectory
-        Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
-        throw $Message
-    }
-    else {
-        Write-ScreenInfo -Message ("Found CM pre-reqs directory in '{0}'" -f $CMPreReqsDirectory)
     }
     Write-ScreenInfo -Message "Activity done" -TaskEnd
     #endregion
@@ -380,69 +362,7 @@ function Install-CMSite {
     }
     #endregion
     
-    #region Copy CM binaries, pre-reqs, SQL Server Native Client, ADK and WinPE files
-    Write-ScreenInfo -Message "Copying files" -TaskStart
-    try {
-        Copy-LabFileItem -Path $CMBinariesDirectory/* -DestinationFolderPath $VMCMBinariesDirectory
-    }
-    catch {
-        $Message = "Failed to copy '{0}' to '{1}' on server '{2}' ({2})" -f $CMBinariesDirectory, $VMInstallDirectory, $CMServerName, $CopyLabFileItem.Exception.Message
-        Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
-        throw $Message
-    }
-
-    try {
-        Copy-LabFileItem -Path $CMPreReqsDirectory/* -DestinationFolderPath $VMCMPreReqsDirectory
-    }
-    catch {
-        $Message = "Failed to copy '{0}' to '{1}' on server '{2}' ({2})" -f $CMPreReqsDirectory, $VMInstallDirectory, $CMServerName, $CopyLabFileItem.Exception.Message
-        Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
-        throw $Message
-    }
-
-    $Paths = @(
-        "{0}\ConfigurationFile-CM.ini" -f $downloadTargetDirectory
-        "{0}\sqlncli.msi" -f $downloadTargetDirectory
-        "{0}\WinPE" -f $downloadTargetDirectory
-        "{0}\ADK" -f $downloadTargetDirectory
-    )
-
-    foreach ($Path in $Paths) {
-        # Put CM ini file in same location as SQL ini, just for consistency. Placement of SQL ini from SQL role isn't configurable.
-        switch -Regex ($Path) {
-            "Configurationfile-CM\.ini$" {
-                $TargetDir = "C:\"
-            }
-            default {
-                $TargetDir = $VMInstallDirectory
-            }
-        }
-        try {
-            Copy-LabFileItem -Path $Path -DestinationFolderPath $TargetDir
-        }
-        catch {
-            $Message = "Failed to copy '{0}' to '{1}' on server '{2}' ({2})" -f $Path, $TargetDir, $CMServerName, $CopyLabFileItem.Exception.Message
-            Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
-            throw $Message
-        }
-    }
-    Write-ScreenInfo -Message "Activity done" -TaskEnd
-    #endregion
-
-    #region Install SQL Server Native Client
-    Write-ScreenInfo -Message "Installing SQL Server Native Client" -TaskStart
-    $Path = "{0}\sqlncli.msi" -f $VMInstallDirectory
-    $job = Install-LabSoftwarePackage -LocalPath $Path -CommandLine "/qn /norestart IAcceptSqlncliLicenseTerms=Yes" -ExpectedReturnCodes 0
-    Wait-LWLabJob -Job $job
-    try {
-        $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
-    }
-    catch {
-        Write-ScreenInfo -Message ("Failed to install SQL Server Native Client ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -Type "Error" -TaskEnd
-        throw $ReceiveJobErr
-    }
-    Write-ScreenInfo -Message "Activity done" -TaskEnd
-    #endregion
+    
 
     #region Restart computer
     Write-ScreenInfo -Message "Restarting server" -TaskStart
@@ -522,36 +442,6 @@ function Install-CMSite {
     }
     Write-ScreenInfo -Message "Activity done" -TaskEnd
     #endregion
-    
-    #region Install ADK
-    Write-ScreenInfo -Message "Installing ADK" -TaskStart
-    $Path = "{0}\ADK\adksetup.exe" -f $VMInstallDirectory
-    $job = Install-LabSoftwarePackage -LocalPath $Path -CommandLine "/norestart /q /ceip off /features OptionId.DeploymentTools OptionId.UserStateMigrationTool OptionId.ImagingAndConfigurationDesigner" -ExpectedReturnCodes 0
-    Wait-LWLabJob -Job $job
-    try {
-        $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
-    }
-    catch {
-        Write-ScreenInfo -Message ("Failed to install ADK ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -Type "Error" -TaskEnd
-        throw $ReceiveJobErr
-    }
-    Write-ScreenInfo -Message "Activity done" -TaskEnd
-    #endregion
-
-    #region Install WinPE
-    Write-ScreenInfo -Message "Installing WinPE" -TaskStart
-    $Path = "{0}\WinPE\adkwinpesetup.exe" -f $VMInstallDirectory
-    $job = Install-LabSoftwarePackage -LocalPath $Path -CommandLine "/norestart /q /ceip off /features OptionId.WindowsPreinstallationEnvironment" -ExpectedReturnCodes 0
-    Wait-LWLabJob -Job $job
-    try {
-        $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
-    }
-    catch {
-        Write-ScreenInfo -Message ("Failed to install WinPE ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -Type "Error" -TaskEnd
-        throw $ReceiveJobErr
-    }
-    Write-ScreenInfo -Message "Activity done" -TaskEnd
-    #endregion 
 
     #region Install WSUS
     Write-ScreenInfo -Message "Installing WSUS" -TaskStart
