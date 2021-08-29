@@ -12,7 +12,8 @@ Param (
 )
 
 #region Define functions
-function Update-CMSite {
+function Update-CMSite
+{
     [CmdletBinding()]
     Param (
         [Parameter(Mandatory)]
@@ -30,21 +31,22 @@ function Update-CMSite {
     $CMServerFqdn = $CMServer.FQDN
 
     $PSDefaultParameterValues = @{
-        "Invoke-LabCommand:ComputerName"            = $CMServerName
-        "Invoke-LabCommand:AsJob"                   = $true
-        "Invoke-LabCommand:PassThru"                = $true
-        "Invoke-LabCommand:NoDisplay"               = $true
-        "Invoke-LabCommand:Retries"                 = 1
-        "Install-LabSoftwarePackage:ComputerName"   = $CMServerName
-        "Install-LabSoftwarePackage:AsJob"          = $true
-        "Install-LabSoftwarePackage:PassThru"       = $true
-        "Install-LabSoftwarePackage:NoDisplay"      = $true
-        "Wait-LWLabJob:NoDisplay"                   = $true
+        "Invoke-LabCommand:ComputerName"          = $CMServerName
+        "Invoke-LabCommand:AsJob"                 = $true
+        "Invoke-LabCommand:PassThru"              = $true
+        "Invoke-LabCommand:NoDisplay"             = $true
+        "Invoke-LabCommand:Retries"               = 1
+        "Install-LabSoftwarePackage:ComputerName" = $CMServerName
+        "Install-LabSoftwarePackage:AsJob"        = $true
+        "Install-LabSoftwarePackage:PassThru"     = $true
+        "Install-LabSoftwarePackage:NoDisplay"    = $true
+        "Wait-LWLabJob:NoDisplay"                 = $true
     }
     #endregion
 
     #region Define enums
-    enum SMS_CM_UpdatePackages_State {
+    enum SMS_CM_UpdatePackages_State
+    {
         AvailableToDownload = 327682
         ReadyToInstall = 262146
         Downloading = 262145
@@ -54,7 +56,8 @@ function Update-CMSite {
     #endregion
 
     #region Check $Version
-    if ($Version -eq "2002") {
+    if ($Version -eq "2002")
+    {
         Write-ScreenInfo -Message "Target verison is 2002, skipping updates"
         return
     }
@@ -70,15 +73,18 @@ function Update-CMSite {
     Write-ScreenInfo -Message "Ensuring CONFIGURATION_MANAGER_UPDATE service is running" -TaskStart
     $job = Invoke-LabCommand -ActivityName "Ensuring CONFIGURATION_MANAGER_UPDATE service is running" -ScriptBlock {
         $service = "CONFIGURATION_MANAGER_UPDATE"
-        if ((Get-Service $service | Select-Object -ExpandProperty Status) -ne "Running") {
+        if ((Get-Service $service | Select-Object -ExpandProperty Status) -ne "Running")
+        {
             Start-Service "CONFIGURATION_MANAGER_UPDATE" -ErrorAction "Stop"
         }
     }
     Wait-LWLabJob -Job $job
-    try {
+    try
+    {
         $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
     }
-    catch {
+    catch
+    {
         Write-ScreenInfo -Message ("Could not start CONFIGURATION_MANAGER_UPDATE service ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -TaskEnd -Type "Error" -TaskEnd
         throw $ReceiveJobErr
     }
@@ -98,25 +104,27 @@ function Update-CMSite {
     } -IfSucceedScript {
         return $Update
     } -ScriptBlock {
-        $job = Invoke-LabCommand -ActivityName "Waiting for updates to appear in console" -Variable (Get-Variable -Name "CMSiteCode") -ScriptBlock {
-            $Query = "SELECT * FROM SMS_CM_UpdatePackages WHERE Impact = '31'"
-            Get-CimInstance -Namespace "ROOT/SMS/site_$CMSiteCode" -Query $Query -ErrorAction "Stop" | Sort-object -Property FullVersion -Descending
+        $cim = New-LabCimSession -ComputerName $ComputerName
+        $Query = "SELECT * FROM SMS_CM_UpdatePackages WHERE Impact = '31'"
+            
+        try
+        {
+            $Update = Get-CimInstance -Namespace "ROOT/SMS/site_$CMSiteCode" -Query $Query -ErrorAction "Stop" -ErrorVariable ReceiveJobErr -CimSession $cim | Sort-object -Property FullVersion -Descending
         }
-        Wait-LWLabJob -Job $job -NoNewLine
-        try {
-            $Update = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
-        }
-        catch {
+        catch
+        {
             Write-ScreenInfo -Message ("Could not query SMS_CM_UpdatePackages to find latest update ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -TaskEnd -Type "Error"
             throw $ReceiveJobErr
         }
     }
     
-    if ($Version -eq "Latest") {
+    if ($Version -eq "Latest")
+    {
         # https://github.com/PowerShell/PowerShell/issues/9185
         $Update = $Update[0]
     }
-    else {
+    else
+    {
         $Update = $Update | Where-Object { $_.Name -like "*$Version*" }
     }
 
@@ -128,18 +136,22 @@ function Update-CMSite {
     #endregion
 
     #region Initiate download and wait for state to change to Downloading
-    if ($Update.State -eq [SMS_CM_UpdatePackages_State]::AvailableToDownload) {
+    if ($Update.State -eq [SMS_CM_UpdatePackages_State]::AvailableToDownload)
+    {
 
         Write-ScreenInfo -Message "Initiating download" -TaskStart
-        if ($Update.State -eq [SMS_CM_UpdatePackages_State]::AvailableToDownload) {
+        if ($Update.State -eq [SMS_CM_UpdatePackages_State]::AvailableToDownload)
+        {
             $job = Invoke-LabCommand -ActivityName "Initiating download" -Variable (Get-Variable -Name "Update") -ScriptBlock {
                 Invoke-CimMethod -InputObject $Update -MethodName "SetPackageToBeDownloaded" -ErrorAction "Stop"
             }
             Wait-LWLabJob -Job $job
-            try {
+            try
+            {
                 $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
             }
-            catch {
+            catch
+            {
                 Write-ScreenInfo -Message ("Failed to initiate download ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -TaskEnd -Type "Error"
                 throw $ReceiveJobErr
             }
@@ -165,25 +177,27 @@ function Update-CMSite {
                 # Writing dot because of -NoNewLine in Wait-LWLabJob
                 Write-ScreenInfo -Message "."
                 Write-ScreenInfo -Message "Download did not start, restarting SMS_EXECUTIVE" -TaskStart -Type "Warning"
-                try {
+                try
+                {
                     Restart-ServiceResilient -ComputerName $CMServerName -ServiceName "SMS_EXECUTIVE" -ErrorAction "Stop" -ErrorVariable "RestartServiceResilientErr"
                 }
-                catch {
+                catch
+                {
                     $Message = "Could not restart SMS_EXECUTIVE ({0})" -f $RestartServiceResilientErr.ErrorRecord.Exception.Message
                     Write-ScreenInfo -Message $Message -TaskEnd -Type "Error"
                     throw $Message
                 }
                 Write-ScreenInfo -Message "Activity done" -TaskEnd
             } -ScriptBlock {
-                $job = Invoke-LabCommand -ActivityName "Verifying update download initiated OK" -Variable (Get-Variable -Name "UpdatePackageGuid", "CMSiteCode") -ScriptBlock {
-                    $Query = "SELECT * FROM SMS_CM_UPDATEPACKAGES WHERE PACKAGEGUID = '{0}'" -f $UpdatePackageGuid
-                    Get-CimInstance -Namespace "ROOT/SMS/site_$CMSiteCode" -Query $Query -ErrorAction "Stop"
+                $cim = New-LabCimSession -ComputerName $ComputerName
+                $Query = "SELECT * FROM SMS_CM_UPDATEPACKAGES WHERE PACKAGEGUID = '{0}'" -f $UpdatePackageGuid
+                    
+                try
+                {
+                    $Update = Get-CimInstance -Namespace "ROOT/SMS/site_$CMSiteCode" -Query $Query -ErrorAction "Stop" -ErrorVariable ReceiveJobErr -CimSession $cim
                 }
-                Wait-LWLabJob -Job $job -NoNewLine
-                try {
-                    $Update = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
-                }
-                catch {
+                catch
+                {
                     Write-ScreenInfo -Message ("Failed to query SMS_CM_UpdatePackages after initiating download (2) ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -TaskEnd -Type "Error"
                     throw $ReceiveJobErr
                 }
@@ -197,7 +211,8 @@ function Update-CMSite {
     #endregion
     
     #region Wait for update to finish download
-    if ($Update.State -eq [SMS_CM_UpdatePackages_State]::Downloading) {
+    if ($Update.State -eq [SMS_CM_UpdatePackages_State]::Downloading)
+    {
 
         Write-ScreenInfo -Message "Waiting for update to finish downloading" -TaskStart
         $Update = New-LoopAction -LoopTimeout 604800 -LoopTimeoutType "Seconds" -LoopDelay 15 -LoopDelayType "Seconds" -ExitCondition {
@@ -213,15 +228,15 @@ function Update-CMSite {
             Write-ScreenInfo -Message "."
             return $Update
         } -ScriptBlock {
-            $job = Invoke-LabCommand -ActivityName "Querying update download status" -Variable (Get-Variable -Name "Update", "CMSiteCode") -ScriptBlock {
-                $Query = "SELECT * FROM SMS_CM_UPDATEPACKAGES WHERE PACKAGEGUID = '{0}'" -f $Update.PackageGuid
-                Get-CimInstance -Namespace "ROOT/SMS/site_$CMSiteCode" -Query $Query -ErrorAction "Stop"
+            $cim = New-LabCimSession -ComputerName $ComputerName
+            $Query = "SELECT * FROM SMS_CM_UPDATEPACKAGES WHERE PACKAGEGUID = '{0}'" -f $Update.PackageGuid
+                
+            try
+            {
+                $Update = Get-CimInstance -Namespace "ROOT/SMS/site_$CMSiteCode" -Query $Query -ErrorAction "Stop" -ErrorVariable ReceiveJobErr -CimSession $cim
             }
-            Wait-LWLabJob -Job $job -NoNewLine
-            try {
-                $Update = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
-            }
-            catch {
+            catch
+            {
                 Write-ScreenInfo -Message ("Failed to query SMS_CM_UpdatePackages waiting for download to complete ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -TaskEnd -Type "Error"
                 throw $ReceiveJobErr
             }
@@ -232,7 +247,8 @@ function Update-CMSite {
     #endregion
     
     #region Initiate update install and wait for state to change to Installed
-    if ($Update.State -eq [SMS_CM_UpdatePackages_State]::ReadyToInstall) {
+    if ($Update.State -eq [SMS_CM_UpdatePackages_State]::ReadyToInstall)
+    {
 
         Write-ScreenInfo -Message "Waiting for SMS_SITE_COMPONENT_MANAGER to enter an idle state" -TaskStart
         $ServiceState = New-LoopAction -LoopTimeout 30 -LoopTimeoutType "Minutes" -LoopDelay 1 -LoopDelayType "Minutes" -ExitCondition {
@@ -252,10 +268,12 @@ function Update-CMSite {
                 Get-Content -Path "C:\Program Files\Microsoft Configuration Manager\Logs\sitecomp.log" -Tail 2 -ErrorAction "Stop"
             }
             Wait-LWLabJob -Job $job -NoNewLine
-            try {
+            try
+            {
                 $sitecomplog = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
             }
-            catch {
+            catch
+            {
                 Write-ScreenInfo -Message ("Failed to read sitecomp.log to ({0})" -f $ReceiveJobErr.ErrorRecord.ExceptionMessage) -TaskEnd -Type "Error"
                 throw $ReceiveJobErr
             }
@@ -264,13 +282,15 @@ function Update-CMSite {
 
         Write-ScreenInfo -Message "Initiating update" -TaskStart
         $job = Invoke-LabCommand -ActivityName "Initiating update" -Variable (Get-Variable -Name "Update") -ScriptBlock {
-            Invoke-CimMethod -InputObject $Update -MethodName "InitiateUpgrade" -Arguments @{PrereqFlag = 2}
+            Invoke-CimMethod -InputObject $Update -MethodName "InitiateUpgrade" -Arguments @{PrereqFlag = 2 }
         }
         Wait-LWLabJob -Job $job
-        try {
+        try
+        {
             $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
         }
-        catch {
+        catch
+        {
             Write-ScreenInfo -Message ("Could not initiate update ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -TaskEnd -Type "Error"
             throw $ReceiveJobErr
         }
@@ -289,13 +309,12 @@ function Update-CMSite {
             return $Update
         } -ScriptBlock {
             # No error handling since WMI can become unavailabile with "generic error" exception multiple times throughout the update. Not ideal
-            $job = Invoke-LabCommand -ComputerName $CMServerName -ActivityName "Querying update install state" -Variable (Get-Variable -Name "UpdatePackageGuid", "CMSiteCode") -ScriptBlock {
-                $Query = "SELECT * FROM SMS_CM_UPDATEPACKAGES WHERE PACKAGEGUID = '{0}'" -f $UpdatePackageGuid
-                Get-CimInstance -Namespace "ROOT/SMS/site_$CMSiteCode" -Query $Query -ErrorAction SilentlyContinue
-            }
-            Wait-LWLabJob -Job $job -NoNewLine
-            $Update = $job | Receive-Job -ErrorAction SilentlyContinue
-            if ($Update.State -eq [SMS_CM_UpdatePackages_State]::Failed) {
+            $cim = New-LabCimSession -ComputerName $ComputerName
+            $Query = "SELECT * FROM SMS_CM_UPDATEPACKAGES WHERE PACKAGEGUID = '{0}'" -f $UpdatePackageGuid
+            $Update = Get-CimInstance -Namespace "ROOT/SMS/site_$CMSiteCode" -Query $Query -ErrorAction SilentlyContinue -CimSession $cim
+
+            if ($Update.State -eq [SMS_CM_UpdatePackages_State]::Failed)
+            {
                 Write-ScreenInfo -Message "."
                 $Message = "Update failed, check CMUpdate.log"
                 Write-ScreenInfo -Message $Message -TaskEnd -Type "Error"
@@ -311,18 +330,18 @@ function Update-CMSite {
 
     #region Validate update
     Write-ScreenInfo -Message "Validating update" -TaskStart
-    $job = Invoke-LabCommand -ActivityName "Validating update" -Variable (Get-Variable -Name "CMSiteCode") -ScriptBlock {
-        Get-CimInstance -Namespace "ROOT/SMS/site_$($CMSiteCode)" -ClassName "SMS_Site" -ErrorAction "Stop"
+    $cim = New-LabCimSession -ComputerName $ComputerName
+    try
+    {
+        $InstalledSite = Get-CimInstance -Namespace "ROOT/SMS/site_$($CMSiteCode)" -ClassName "SMS_Site" -ErrorAction "Stop" -CimSession $cim
     }
-    Wait-LWLabJob -Job $job
-    try {
-        $InstalledSite = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
-    }
-    catch {
+    catch
+    {
         Write-ScreenInfo -Message ("Could not query SMS_Site to validate update install ({0})" -f $ReceiveJobErr.ErrorRecord.Exception.Message) -TaskEnd -Type "Error"
         throw $ReceiveJobErr
     }
-    if ($InstalledSite.Version -ne $Update.FullVersion) {
+    if ($InstalledSite.Version -ne $Update.FullVersion)
+    {
         $Message = "Update validation failed, installed version is '{0}' and the expected version is '{1}'" -f $InstalledSite.Version, $Update.FullVersion
         Write-ScreenInfo -Message $Message -Type "Error" -TaskEnd
         throw $Message
@@ -335,10 +354,12 @@ function Update-CMSite {
     $cmd = "/q TargetDir=`"C:\Program Files (x86)\Microsoft Configuration Manager\AdminConsole`" DefaultSiteServerName={0}" -f $CMServerFqdn
     $job = Install-LabSoftwarePackage -LocalPath "C:\Program Files\Microsoft Configuration Manager\tools\ConsoleSetup\ConsoleSetup.exe" -CommandLine $cmd -ExpectedReturnCodes 0 -ErrorAction "Stop" -ErrorVariable "InstallLabSoftwarePackageErr"
     Wait-LWLabJob -Job $job
-    try {
+    try
+    {
         $result = $job | Receive-Job -ErrorAction "Stop" -ErrorVariable "ReceiveJobErr"
     }
-    catch {
+    catch
+    {
         Write-ScreenInfo -Message ("Console update failed ({0}) " -f $ReceiveJobErr.ErrorRecord.Exception.Message) -Type "Warning"
     }
     Write-ScreenInfo -Message "Activity done" -TaskEnd
