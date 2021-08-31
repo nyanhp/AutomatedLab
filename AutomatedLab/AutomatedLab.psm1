@@ -628,8 +628,9 @@ function Export-Lab
         }
         $tmpList.Export($lab.DiskDefinitionFiles[0].Path)
     }
-    $lab.Machines.Clear()
-    $lab.Disks.Clear()
+    
+    try { $lab.Machines.Clear() } catch {}
+    try { $lab.Disks.Clear() } catch {}
 
     $lab.Export($lab.LabFilePath)
 

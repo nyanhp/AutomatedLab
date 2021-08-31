@@ -391,7 +391,7 @@ GO
     if ($servers)
     {
         Write-ScreenInfo -Message "Installing $($dotnet48InstallFile.FullName) on '$($servers.Name -join ',')'"
-        Install-LabSoftwarePackage -Path $dotnet48InstallFile.FullName -CommandLine '/q /norestart /log c:\DeployDebug\dotnet48.txt' -ComputerName $servers -UseShellExecute -Verbose
+        Install-LabSoftwarePackage -Path $dotnet48InstallFile.FullName -CommandLine '/q /norestart /log c:\DeployDebug\dotnet48.txt' -ComputerName $servers -UseShellExecute
         Restart-LabVM -ComputerName $servers -Wait
     }
 
