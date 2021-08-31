@@ -1190,39 +1190,37 @@ function Connect-LabVM
             return
         }
 
-        if ($machine.HostType -eq 'Azure')
+        $hostname, $port = if ($machine.HostType -eq 'Azure')
         {
             $cn = Get-LWAzureVMConnectionInfo -ComputerName $machine
-            $cmd = 'cmdkey.exe /add:"TERMSRV/{0}" /user:"{1}" /pass:"{2}"' -f $cn.DnsName, $cred.UserName, $cred.GetNetworkCredential().Password
-            Invoke-Expression $cmd | Out-Null
-            mstsc.exe "/v:$($cn.DnsName):$($cn.RdpPort)" /f
-
-            Start-Sleep -Seconds 5 #otherwise credentials get deleted too quickly
-
-            $cmd = 'cmdkey /delete:TERMSRV/"{0}"' -f $cn.DnsName
-            Invoke-Expression $cmd | Out-Null
+            $cn.DnsName, $cn.RdpPort
         }
         elseif (Get-LabConfigurationItem -Name SkipHostFileModification)
         {
-            $cmd = 'cmdkey.exe /add:"TERMSRV/{0}" /user:"{1}" /pass:"{2}"' -f $machine.IpAddress.ipaddress.AddressAsString, $cred.UserName, $cred.GetNetworkCredential().Password
-            Invoke-Expression $cmd | Out-Null
-            mstsc.exe "/v:$($machine.IpAddress.ipaddress.AddressAsString)" /f
-
-            Start-Sleep -Seconds 1 #otherwise credentials get deleted too quickly
-
-            $cmd = 'cmdkey /delete:TERMSRV/"{0}"' -f $machine.IpAddress.ipaddress.AddressAsString
-            Invoke-Expression $cmd | Out-Null
+            $machine.IpAddress.ipaddress.AddressAsString, 3389
         }
         else
         {
-            $cmd = 'cmdkey.exe /add:"TERMSRV/{0}" /user:"{1}" /pass:"{2}"' -f $machine.Name, $cred.UserName, $cred.GetNetworkCredential().Password
-            Invoke-Expression $cmd | Out-Null
-            mstsc.exe "/v:$($machine.Name)" /f
+            $machine.Name, 3389
+        }
 
-            Start-Sleep -Seconds 1 #otherwise credentials get deleted too quickly
+        if (-not ($IsLinux -or $IsMacOs))
+        {
+            $cmd = 'cmdkey.exe /add:"TERMSRV/{0}" /user:"{2}" /pass:"{3}"' -f $hostname, $cred.UserName, $cred.GetNetworkCredential().Password
+            Invoke-Expression $cmd | Out-Null
+            mstsc.exe "/v:$($hostname):$($port)" /f
+
+            [Threading.Thread]::Sleep(5000)
 
             $cmd = 'cmdkey /delete:TERMSRV/"{0}"' -f $machine.Name
             Invoke-Expression $cmd | Out-Null
+            return
+        }
+
+        if (Get-Command -Name rdesktop -ErrorAction SilentlyContinue)
+        {
+            $cmd = 'rdesktop -u "{0}" -p "{1}" -f {2}:{3}' -f $cred.UserName, $cred.GetNetworkCredential().Password, $hostname, $port
+            $null = Invoke-Expression $cmd
         }
     }
 }

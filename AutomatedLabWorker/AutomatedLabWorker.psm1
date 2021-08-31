@@ -256,6 +256,15 @@ function Invoke-LWCommand
                 $internalSession.Remove($nonAvailableSession)
             }
 
+            $parameters.ErrorAction = 'SilentlyContinue'
+            $parameters.ErrorVariable = 'invLwComErrors'
+
+            # On Linux, OMI client is breaking a lot more frequently than WinRM on Windows
+            # And of course the exception contains nothing of value
+            if ($invLwComErrors -and $invLwComErrors.Exception.TransportMessage -eq 'MI_RESULT_FAILED' -and $invLwComErrors.Exception.Message -match 'ERROR_WSMAN_INVALID_SELECTORS')
+            {
+                Remove-LabPSSession -ComputerName $Machine
+            }
             $result.AddRange(@(Invoke-Command @parameters))
 
             #remove all sessions for machines successfully invoked the command

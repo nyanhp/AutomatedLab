@@ -1200,6 +1200,8 @@ function Install-LabRdsCertificate
         return
     }
 
+    if ($IsLinux -or $IsMacOs) { return }
+
     $machines = Get-LabVM -All | Where-Object -FilterScript { $_.OperatingSystemType -eq 'Windows' -and $_.OperatingSystem.Version -ge 6.3 -and -not $_.SkipDeployment }
     if (-not $machines)
     {
@@ -1254,6 +1256,8 @@ function Uninstall-LabRdsCertificate
     {
         return
     }
+
+    if ($IsLinux -or $IsMacOs) { return }
 
     foreach ($certFile in (Get-ChildItem -File -Path (Join-Path -Path $lab.LabPath -ChildPath Certificates) -Filter *.cer -ErrorAction SilentlyContinue))
     {

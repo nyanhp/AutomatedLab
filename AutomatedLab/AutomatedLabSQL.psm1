@@ -390,8 +390,8 @@ GO
 
     if ($servers)
     {
-        Write-ScreenInfo -Message "Installing .net Framework 4.8 on '$($servers.Name -join ',')'"
-        Install-LabSoftwarePackage -Path $dotnet48InstallFile.FullName -CommandLine '/q /norestart /log c:\DeployDebug\dotnet48.txt' -ComputerName $servers -UseShellExecute
+        Write-ScreenInfo -Message "Installing $($dotnet48InstallFile.FullName) on '$($servers.Name -join ',')'"
+        Install-LabSoftwarePackage -Path $dotnet48InstallFile.FullName -CommandLine '/q /norestart /log c:\DeployDebug\dotnet48.txt' -ComputerName $servers -UseShellExecute -Verbose
         Restart-LabVM -ComputerName $servers -Wait
     }
 
