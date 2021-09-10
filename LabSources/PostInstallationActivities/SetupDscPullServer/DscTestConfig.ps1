@@ -1,4 +1,4 @@
-﻿Configuration "TestConfig$($env:COMPUTERNAME)"
+﻿Configuration "$($env:COMPUTERNAME)"
 {
     Import-DscResource –ModuleName 'PSDesiredStateConfiguration'
 
@@ -14,5 +14,5 @@
     }
 }
 
-&"TestConfig$($env:COMPUTERNAME)" -OutputPath C:\DscTestConfig | Out-Null
-Rename-Item -Path C:\DscTestConfig\localhost.mof -NewName "TestConfig$($env:COMPUTERNAME).mof"
+&"$($env:COMPUTERNAME)" -OutputPath C:\DscTestConfig | Out-Null
+Rename-Item -Path C:\DscTestConfig\localhost.mof -NewName "$($env:COMPUTERNAME).mof"

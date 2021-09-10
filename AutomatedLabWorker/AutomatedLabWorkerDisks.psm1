@@ -126,6 +126,7 @@ exit
         }
 
         Write-PSFMessage 'Applying image to the volume...'
+        $null = Get-PSDrive
 
         $installFilePath = Get-Item -Path "$isoDrive\Sources\install.*" | Where-Object Name -Match '.*\.(esd|wim)'
 

@@ -3,7 +3,9 @@
     [string[]] $PullServer,
 
     [Parameter(Mandatory)]
-    [string[]] $RegistrationKey
+    [string[]] $RegistrationKey,
+
+    [switch] $SkipReporting
 )
 
 [DSCLocalConfigurationManager()]
@@ -33,11 +35,11 @@ Configuration PullClient
     {
         Settings
         {
-            RefreshMode          = 'Pull'
-            RefreshFrequencyMins = 30
+            RefreshMode                    = 'Pull'
+            RefreshFrequencyMins           = 30
             ConfigurationModeFrequencyMins = 15
-            ConfigurationMode = 'ApplyAndAutoCorrect'
-            RebootNodeIfNeeded   = $true
+            ConfigurationMode              = 'ApplyAndAutoCorrect'
+            RebootNodeIfNeeded             = $true
         }
 
         if ($PullServer.Count -eq 1)
@@ -47,7 +49,7 @@ Configuration PullClient
             {
                 ServerURL          = "https://$($PullServer[0]):8080/PSDSCPullServer.svc"
                 RegistrationKey    = $RegistrationKey[0]
-                ConfigurationNames = @("TestConfig$($flatNames[0])")
+                ConfigurationNames = $env:COMPUTERNAME
                 #AllowUnsecureConnection = $true
             }
         }
@@ -60,24 +62,20 @@ Configuration PullClient
                 {
                     ServerURL          = "https://$($PullServer[$i]):8080/PSDSCPullServer.svc"
                     RegistrationKey    = $RegistrationKey[$i]
-                    ConfigurationNames = @("TestConfig$($flatNames[$i])")
+                    ConfigurationNames = $env:COMPUTERNAME
                     #AllowUnsecureConnection = $true
-                }
-
-                PartialConfiguration "TestConfigDPull$($i + 1)"
-                {
-                    Description = "Partial configuration from Pull Server $($i + 1)"
-                    ConfigurationSource = "[ConfigurationRepositoryWeb]PullServer_$($i + 1)"
-                    RefreshMode = 'Pull'
                 }
             }
         }
 
-        ReportServerWeb CONTOSO-PullSrv
+        if (-not $SkipReporting.IsPresent)
         {
-            ServerURL       = "https://$($PullServer[0]):8080/PSDSCPullServer.svc"
-            RegistrationKey = $RegistrationKey[0]
-            #AllowUnsecureConnection = $true
+            ReportServerWeb CONTOSO-PullSrv
+            {
+                ServerURL       = "https://$($PullServer[0]):8080/PSDSCPullServer.svc"
+                RegistrationKey = $RegistrationKey[0]
+                #AllowUnsecureConnection = $true
+            }
         }
     }
 }
