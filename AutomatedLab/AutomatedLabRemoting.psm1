@@ -80,7 +80,7 @@ function New-LabPSSession
             {
                 $cred = $m.GetLocalCredential()
             }
-            elseif ($IsLinux -and $m.IsDomainJoined -and -not $m.HasDomainJoined)
+            elseif ($m.IsDomainJoined -and -not $m.HasDomainJoined)
             {
                 $cred = $m.GetLocalCredential($true)
             }
