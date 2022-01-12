@@ -72,7 +72,7 @@ function New-LabPSSession
             {
                 $cred = $Credential
             }
-            elseif ($UseLocalCredential -and ($IsLinux -and $m.IsDomainJoined -and -not $m.HasDomainJoined))
+            elseif ($UseLocalCredential -and $m.IsDomainJoined -and -not $m.HasDomainJoined)
             {
                 $cred = $m.GetLocalCredential($true)
             }

@@ -84,22 +84,19 @@ function Install-LabDscPullServer
     Start-LabVM -RoleName $roleName -Wait -ProgressIndicator 15
 
     $ca = Get-LabIssuingCA
-    if (-not $ca)
+    if ($ca)
     {
-        Write-Error 'This role requires a Certificate Authority but there is no one defined in the lab. Please make sure that one machine has the role CaRoot or CaSubordinate.'
-        return
-    }
+        if (-not (Test-LabCATemplate -TemplateName DscPullSsl -ComputerName $ca))
+        {
+            New-LabCATemplate -TemplateName DscPullSsl -DisplayName 'Dsc Pull Sever SSL' -SourceTemplateName WebServer -ApplicationPolicy 'Server Authentication' `
+            -EnrollmentFlags Autoenrollment -PrivateKeyFlags AllowKeyExport -Version 2 -SamAccountName 'Domain Computers' -ComputerName $ca -ErrorAction Stop
+        }
 
-    if (-not (Test-LabCATemplate -TemplateName DscPullSsl -ComputerName $ca))
-    {
-        New-LabCATemplate -TemplateName DscPullSsl -DisplayName 'Dsc Pull Sever SSL' -SourceTemplateName WebServer -ApplicationPolicy 'Server Authentication' `
-        -EnrollmentFlags Autoenrollment -PrivateKeyFlags AllowKeyExport -Version 2 -SamAccountName 'Domain Computers' -ComputerName $ca -ErrorAction Stop
-    }
-
-    if (-not (Test-LabCATemplate -TemplateName DscMofFileEncryption  -ComputerName $ca))
-    {
-        New-LabCATemplate -TemplateName DscMofFileEncryption -DisplayName 'Dsc Mof File Encryption' -SourceTemplateName CEPEncryption -ApplicationPolicy 'Document Encryption' `
-        -KeyUsage KEY_ENCIPHERMENT, DATA_ENCIPHERMENT -EnrollmentFlags Autoenrollment -PrivateKeyFlags AllowKeyExport -Version 2 -SamAccountName 'Domain Computers' -ComputerName $ca
+        if (-not (Test-LabCATemplate -TemplateName DscMofFileEncryption  -ComputerName $ca))
+        {
+            New-LabCATemplate -TemplateName DscMofFileEncryption -DisplayName 'Dsc Mof File Encryption' -SourceTemplateName CEPEncryption -ApplicationPolicy 'Document Encryption' `
+            -KeyUsage KEY_ENCIPHERMENT, DATA_ENCIPHERMENT -EnrollmentFlags Autoenrollment -PrivateKeyFlags AllowKeyExport -Version 2 -SamAccountName 'Domain Computers' -ComputerName $ca
+        }
     }
 
     if ($Online)
@@ -232,9 +229,16 @@ function Install-LabDscPullServer
             Add-LWAzureLoadBalancedPort -Port $remotePort -DestinationPort 8080 -ComputerName $machine -ErrorAction SilentlyContinue
         }
 
-        Request-LabCertificate -Subject "CN=$machine" -TemplateName DscMofFileEncryption -ComputerName $machine -PassThru | Out-Null
+        if (Get-LabIssuingCA)
+        {
+            Request-LabCertificate -Subject "CN=$machine" -TemplateName DscMofFileEncryption -ComputerName $machine -PassThru | Out-Null
 
-        $cert = Request-LabCertificate -Subject "CN=$($machine.Name)" -SAN $machine.Name, $machine.FQDN -TemplateName DscPullSsl -ComputerName $machine -PassThru -ErrorAction Stop
+            $cert = Request-LabCertificate -Subject "CN=$($machine.Name)" -SAN $machine.Name, $machine.FQDN -TemplateName DscPullSsl -ComputerName $machine -PassThru -ErrorAction Stop
+        }
+        else
+        {
+            $cert = @{Thumbprint = 'AllowUnencryptedTraffic'}
+        }
 
         $setupParams = @{
             ComputerName = $machine
