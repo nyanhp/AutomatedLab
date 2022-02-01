@@ -752,7 +752,7 @@ function Wait-LabVM
 
                     $VerbosePreference = $using:VerbosePreference
 
-                    if ($Engine -eq 'Azure') { Import-Module -Name Az* -ErrorAction SilentlyContinue }
+                    if ($Engine -eq 'Azure') { Import-Module -Name Az.Accounts,Az.Compute,Az.Network,Az.Resources,Az.Storage -ErrorAction SilentlyContinue }
                     Import-Module -Name AutomatedLab.Common -ErrorAction Stop
                     Write-Verbose "Importing Lab from $($LabBytes.Count) bytes"
                     Import-Lab -LabBytes $LabBytes -NoValidation -NoDisplay
