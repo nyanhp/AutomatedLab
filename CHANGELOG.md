@@ -5,6 +5,8 @@
 ### Enhancements
 
 ### Bugs
+- Fixing a random issue with Az modules apparently requiring PowerShellGet upon import
+  - Will only be imported when Azure is being used as virtualization engine
 
 ## 5.41.0 (2022-01-31)
 

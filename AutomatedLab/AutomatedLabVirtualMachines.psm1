@@ -744,12 +744,15 @@ function Wait-LabVM
                         [string]$ComputerName,
 
                         [Parameter(Mandatory)]
-                        [bool]$DoNotUseCredSsp
+                        [bool]$DoNotUseCredSsp,
+
+                        [Parameter(Mandatory)]
+                        [string]$Engine
                     )
 
                     $VerbosePreference = $using:VerbosePreference
 
-                    Import-Module -Name Az* -ErrorAction SilentlyContinue
+                    if ($Engine -eq 'Azure') { Import-Module -Name Az* -ErrorAction SilentlyContinue }
                     Import-Module -Name AutomatedLab.Common -ErrorAction Stop
                     Write-Verbose "Importing Lab from $($LabBytes.Count) bytes"
                     Import-Lab -LabBytes $LabBytes -NoValidation -NoDisplay
@@ -759,7 +762,7 @@ function Wait-LabVM
                     $session = New-LabPSSession -ComputerName $ComputerName -UseLocalCredential  -Retries 5000 -DoNotUseCredSsp:$DoNotUseCredSsp
 
                     return $ComputerName
-                } -ArgumentList $lab.Export(), $vm.Name, $DoNotUseCredSsp
+                } -ArgumentList $lab.Export(), $vm.Name, $DoNotUseCredSsp, $lab.DefaultVirtualizationEngine
             }
         }
 
