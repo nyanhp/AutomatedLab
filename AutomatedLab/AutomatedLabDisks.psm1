@@ -359,7 +359,8 @@ function Get-LabVHDX
             {
                 $disk.Path = Join-Path -Path $lab.Target.Path -ChildPath Disks
             }
-            $disk.Path = Join-Path -Path $disk.Path -ChildPath ($disk.Name + '.vhdx')
+            $extension = if ($disk.Shared) {'.vhds'} else {'.vhdx'}
+            $disk.Path = Join-Path -Path $disk.Path -ChildPath ($disk.Name + $extension)
         }
 
         Write-LogFunctionExit -ReturnValue $disks.ToString()

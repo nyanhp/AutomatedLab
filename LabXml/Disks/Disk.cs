@@ -14,6 +14,8 @@
         
         public bool UseLargeFRS { get; set; }
 
+        public bool Shared {get; set;}
+
         public string Label { get; set; }
 
         public char DriveLetter { get; set; }

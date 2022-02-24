@@ -8,6 +8,7 @@
 - 'Invoke-LabDscConfiguration' accepts parameters for DSC configuration now.
 - AL now testing only for required Az modules
 - New function Install-LabAzureRequiredModule
+- HyperV labs can now deploy shared disks (.vhds)
 
 ### Bugs
 - Fixing issue with Get-LabAzureAvailableRoleSize by filtering earlier.

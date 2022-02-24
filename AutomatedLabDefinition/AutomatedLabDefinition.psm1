@@ -1764,7 +1764,9 @@ function Add-LabDiskDefinition
 
         [switch]$SkipInitialize,
 
-        [switch]$PassThru
+        [switch]$PassThru,
+
+        [switch]$Shared
     )
 
     Write-LogFunctionEntry
@@ -1791,6 +1793,7 @@ function Add-LabDiskDefinition
     $disk = New-Object -TypeName AutomatedLab.Disk
     $disk.Name = $Name
     $disk.DiskSize = $DiskSizeInGb
+    $disk.Shared = $Shared.IsPresent
     $disk.SkipInitialization = [bool]$SkipInitialize
     $disk.AllocationUnitSize = $AllocationUnitSize
     $disk.UseLargeFRS = $UseLargeFRS
