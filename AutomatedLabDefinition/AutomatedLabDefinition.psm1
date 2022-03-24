@@ -788,6 +788,14 @@ function New-LabDefinition
     {
         lsb_release -d -s
     }
+    elseif (($IsLinux -or $IsMacOs))
+    {
+        $releaseInfo = Get-Content -Path /etc/*-release | Where-Object {$_.Contains('=')} | ConvertFrom-StringData
+        if ($releaseInfo.Name) {$releaseInfo.Name}
+        elseif ($releaseInfo.Name) {$releaseInfo.Name}
+        elseif ($releaseInfo.Id) {$releaseInfo.Id}
+        else {'Unknown'} # You have to love the consistency...
+    }
     elseif (-not ($IsLinux -or $IsMacOs)) # easier than IsWindows, which does not exist in Windows PowerShell...
     {
         (Get-CimInstance -ClassName Win32_OperatingSystem).Caption
