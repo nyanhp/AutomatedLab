@@ -2,13 +2,12 @@
 
     $linuxRequiredTools = @(
         @{ Package = 'virt-install' }
-        @{ Package = 'virsh' }
-        @{ Package = 'ip' }
-        @{ Package = 'bridge' }
-        @{ Package = 'route' }
-        @{ Package = 'qemu-utils' }
+        @{ Package = 'libvirt-client' }
+        @{ Package = 'iproute' }
+        @{ Package = 'qemu-kvm' }
         @{ Package = 'guestfs-tools' }
         @{ Package = 'libguestfs' }
+        @{ Package = 'nbd' }
     )
 
     if (-not ($IsLinux -or $IsMacOS))
@@ -70,8 +69,23 @@
             Get-Content -Path /proc/cpuinfo | Select-String -Pattern '^flags.*(vmx|svm)' | Should -Not -BeNullOrEmpty
         }
 
-        It '<Package> is available' -TestCases $linuxRequiredTools {
-            Get-Command -Name $Package -ErrorAction SilentlyContinue | Should -Not -BeNullOrEmpty
+        It '<Package> is available' -TestCases $linuxRequiredTools {            
+            if (Get-Command -Name dnf -ErrorAction SilentlyContinue)
+            {
+                dnf list installed $Package 2>$null | Should -Not -BeNullOrEmpty
+            }
+            elseif (Get-Command -Name yum -ErrorAction SilentlyContinue)
+            {
+                yum list installed $Package 2>$null | Should -Not -BeNullOrEmpty
+            }
+            elseif (Get-Command -Name apt -ErrorAction SilentlyContinue)
+            {
+                apt -qq --installed list $Package 2>$null | Should -Not -BeNullOrEmpty
+            }
+            else
+            {
+                $false | Should -BeTrue -Because 'We are unable to detect a supported distribution (i.e. neither dnf, yum nor apt found'
+            }
         }
 
         It 'Nested virtualization is enabled' {

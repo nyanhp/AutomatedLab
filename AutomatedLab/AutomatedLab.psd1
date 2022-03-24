@@ -256,6 +256,7 @@
         'UnInstall-LabSshKnownHost',
         'Get-LabSshKnownHost',
         'Initialize-LabWindowsActivation'
+        'Test-AutomatedLabPrerequisites'
     )
 
     AliasesToExport        = @(

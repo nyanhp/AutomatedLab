@@ -3994,7 +3994,7 @@ function Test-AutomatedLabPrerequisites
         Write-ScreenInfo -Message 'Please install Pester 5 to check prerequisites'
     }
 
-    Invoke-Pester -Path (Get-Module AutomatedLab).ModuleBase/Tools -Output Detailed
+    Invoke-Pester -Path (Join-Path -Path (Get-Module AutomatedLab).ModuleBase -ChildPath Tools/ALPrerequisites.tests.ps1)  -Output Detailed
 }
 #endregion
 
