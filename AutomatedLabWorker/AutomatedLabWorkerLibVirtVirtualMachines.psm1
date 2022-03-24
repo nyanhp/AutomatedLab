@@ -126,7 +126,7 @@ function Save-LWLibVirtVm
     param
     (
         [Parameter(Mandatory)]
-        [AutomatedLab.Machine]
+        [AutomatedLab.Machine[]]
         $Machine
     )
 
@@ -143,9 +143,18 @@ function Checkpoint-LWLibVirtVm
     param
     (
         [Parameter(Mandatory)]
-        [AutomatedLab.Machine]
-        $Machine
+        [AutomatedLab.Machine[]]
+        $Machine,
+
+        [Parameter(Mandatory)]
+        [string]
+        $SnapshotName
     )
+
+    $vm = PoshLibVirt\Get-Vm -ComputerName $Machine.ResourceName
+    $vm | PoshLibVirt\Suspend-Vm
+    $vm | PoshLibVirt\Checkpoint-Vm -Name $SnapshotName
+    $vm | PoshLibVirt\Start-Vm
 }
 
 function Restore-LWLibVirtVmSnapshot
@@ -154,8 +163,38 @@ function Restore-LWLibVirtVmSnapshot
     param
     (
         [Parameter(Mandatory)]
-        [AutomatedLab.Machine]
-        $Machine
+        [AutomatedLab.Machine[]]
+        $Machine,
+
+        [Parameter(Mandatory)]
+        [string]
+        $SnapshotName
     )
+
+    $vm = PoshLibVirt\Get-Vm -ComputerName $Machine.ResourceName
+    $vm | PoshLibVirt\Suspend-Vm
+    $vm | PoshLibVirt\Restore-VmSnapshot -Name $SnapshotName -Start -Force
+}
+
+function Remove-LWLibVirtVmSnapshot
+{
+    [CmdletBinding()]
+    param
+    (
+        [Parameter(Mandatory, ParameterSetName='Name')]
+        [Parameter(Mandatory, ParameterSetName='All')]
+        [AutomatedLab.Machine[]]
+        $Machine,
+
+        [Parameter(Mandatory, ParameterSetName='Name')]
+        [string]
+        $SnapshotName,
+
+        [Parameter(ParameterSetName='All')]
+        [switch]
+        $All
+    )
+
+    PoshLibVirt\Get-Vm -ComputerName $Machine.ResourceName | PoshLibVirt\Remove-VmSnapshot -Name $SnapshotName -Start -Force
 }
 
