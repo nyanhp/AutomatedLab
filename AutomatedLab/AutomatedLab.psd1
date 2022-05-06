@@ -197,7 +197,6 @@
         'Enable-LabAutoLogon',
         'Disable-LabAutoLogon',
         'Set-LabAzureDefaultLocation',
-        'Set-LabAzureDefaultStorageAccount',
         'Set-LabAzureWebAppContent',
         'Set-LabDefaultOperatingSystem',
         'Set-LabDefaultVirtualizationEngine',
