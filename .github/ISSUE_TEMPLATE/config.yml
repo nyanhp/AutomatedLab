@@ -1,0 +1,8 @@
+﻿blank_issues_enabled: false
+contact_links:
+  - name: Discussions
+    url: https://github.com/automatedlab/automatedlab/discussions
+    about: Please ask and answer questions here.
+  - name: Wiki
+    url: https://automatedlab.org
+    about: Please carefully look through the Wiki before raising an issue.

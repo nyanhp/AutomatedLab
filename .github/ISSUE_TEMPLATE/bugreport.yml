@@ -1,0 +1,70 @@
+﻿name: Bug Report
+description: File a bug report
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: |
+        What did you intend for AutomatedLab to do?
+
+        Please describe your issue in as much detail as possible for another human being to understand it.
+        Please create **one GitHub issue for each problem you experience**. Otherwise it is hard to track the progress.
+        Even though we develop AutomatedLab, we are not clairvoyant and need as many details as 
+        possible to properly troubleshoot your issue. Thanks!
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened?
+      description: |
+        What actually happened?
+
+        Please describe your issue in as much detail as possible for another human being to understand it.
+        Please create **one GitHub issue for each problem you experience**. Otherwise it is hard to track the progress.
+        Even though we develop AutomatedLab, we are not clairvoyant and need as many details as 
+        possible to properly troubleshoot your issue. Thanks!
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce the issue
+      description: |
+        Please add ALL PowerShell Code necessary to reproduce your issue here.
+
+        Keep in mind that another human being needs to understand and run through the issue, especially
+        if it is a bit more complicated.
+    validations:
+      required: true
+  - type: textarea
+    id: version
+    attributes:
+      label: Versions
+      description: What version of AutomatedLab are you running?
+      placeholder: Output of Get-Module AutomatedLab* -List | Select Name,Version
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Linux or Windows?
+      multiple: false
+      options:
+        - Linux
+        - Windows
+  - type: dropdown
+    id: hypervisor
+    attributes:
+      label: Azure or Hyper-V?
+      multiple: false
+      options:
+        - Azure
+        - Hyper-V
