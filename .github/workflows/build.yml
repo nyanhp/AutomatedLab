@@ -1,0 +1,46 @@
+# Build
+# Validate
+# Jeder PR
+# Platform Linux
+name: Build and validate
+on:
+  workflow_call:
+  pull_request:
+    branches:
+      - master
+      - develop
+jobs:
+  buildwin:
+    name: Build module and msi
+    runs-on: windows-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Download prerequisites
+        shell: pwsh
+        run: .build/00prerequisites.ps1
+      - name: Build modules for testing
+        shell: pwsh
+        run: .build/01build.ps1
+      - name: Publish build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: my-artifact
+          path: path/to/artifact/ # or path/to/artifact
+  buildunix:
+    name: Build deb and rpm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Download prerequisites
+        shell: pwsh
+        run: .build/00prerequisites.ps1
+      - name: Build modules for testing
+        shell: pwsh
+        run: .build/01build.ps1
+    

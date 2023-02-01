@@ -1,0 +1,49 @@
+﻿TOPIC
+    about_automatedlab_hyperv
+
+SHORT DESCRIPTION
+    Generic help about the Role 'hyperv' in AutomatedLab
+
+LONG DESCRIPTION
+Hyper-V
+    AutomatedLab can deploy Hyper-V VMs on a system that allows nested
+    virtualization, e.g. Windows 10.
+
+    ROLE ASSIGNMENT
+    To create a new hypervisor in your lab, simply assign it the HyperV role:
+
+    Add-LabMachineDefinition -Name HV01 -Roles HyperV
+
+    You can also customize many relevant settings by creating the role
+    definition reference:
+
+    $role = Get-LabMachineRoleDefinition -Role HyperV -Properties @{EnableEnhancedSessionMode = 'true'}
+    Add-LabMachineDefinition -Name HV01 -Roles $role
+
+    ROLE PROPERTIES
+    The following role properties can be assigned and are entirely optional:
+
+    MAXIMUMSTORAGEMIGRATIONS
+    The maximum number of concurrent storage migrations
+
+    MAXIMUMVIRTUALMACHINEMIGRATIONS
+    The maximum number of concurrent VM migrations
+
+    VIRTUALMACHINEMIGRATIONAUTHENTICATIONTYPE
+    The authentication method used for live migrations (CredSSP, Kerberos)
+
+    USEANYNETWORKFORMIGRATION
+    Indicates that any network may be used for live migrations
+
+    VIRTUALMACHINEMIGRATIONPERFORMANCEOPTION
+    Compression, SMB, TCPIP
+
+    RESOURCEMETERINGSAVEINTERVAL
+    The interval in which metering information is stored
+
+    NUMASPANNINGENABLED
+    Indicates that NUMA spanning will be enabled
+
+    ENABLEENHANCEDSESSIONMODE
+    Indicates that the enhanced session mode is available
+

@@ -1,0 +1,744 @@
+﻿TOPIC
+    about_automatedlabadvanced
+
+SHORT DESCRIPTION
+    Generic help about the advanced mechanics of AutomatedLab
+
+LONG DESCRIPTION
+The AutomatedLab settings system
+    Since AutomatedLab version 5 we are using user-specific and global settings,
+    managed with the module
+    PSFramework
+    .
+    To view all settings, you may use the `Get-LabConfigurationItem` cmdlet. For
+    a bit of documentation, refer to `Get-PSFConfig -Module AutomatedLab`
+    instead. If you don't know what a setting does, please do not set it. If you
+    do know what the setting does, feel free to do so:
+
+
+    ## One session only, then reset to default
+    Set-PSFConfig -Module AutomatedLab -Name MacAddressPrefix -Value '0017FC'
+    
+    ## Persistent setting, survives module updates
+    Set-PSFConfig -Module AutomatedLab -Name MacAddressPrefix -Value '0017FC' -PassThru | Register-PSFConfig
+
+    AVAILABLE SETTINGS
+    ACCESSDATABASEENGINE2016X86
+    The URL to download the Microsoft Access database engine used with our Pull
+    Server role.
+
+    AZURELOCATIONSURLS
+    This setting contains key value pairs containing the Azure region name and
+    the speed test URL assigned to it to automatically select the appropriate
+    region for a new lab deployment.
+
+    AZURERETRYCOUNT
+    In integer indicating how often Azure cmdlets should be executed again if a
+    transient error occurs.
+
+    BUILDAGENTURI
+    The URL to download the TFS/VSTS/Azure DevOps build agent.
+
+    CPPREDIST32
+    The URL to the Visual C++ redist (x86)
+
+    CPPREDIST64
+    The URL to the Visual C++ redist
+
+    DEFAULTADDRESSSPACE
+    The default address space for a lab, e.g. 192.168.10.0/24
+
+    DEFAULTAZUREROLESIZE
+    The default Azure VM role size class to use, e.g. D. AutomatedLab tries to
+    find the next best role size fitting your VM processor and memory
+    requirements.
+
+    DEFAULTPROGRESSINDICATOR
+    DISABLEWINDOWSDEFENDER
+    Indicates if Windows Defender should be disabled for new VM deployments.
+
+    DISKDEPLOYMENTINPROGRESSPATH
+    The path where the temporary file indicating that disks are created is
+    stored. This setting is used to lessen the load on a disk during
+    deployments.
+
+    DISKFILENAME
+    The name of the XML file containing disk configurations of a lab.
+
+    DONOTSKIPNONNONENGLISHISO
+    Indicates that non English ISO files should not be skipped during import.
+
+    DONOTUSEGETHOSTENTRYINNEWLABPSSESSION
+    Indicates that the hosts file should not be used to lookup the DNS name of a
+    lab VM.
+
+    DOTNET452DOWNLOADLINK
+    The URL to download .NET 4.5.2
+
+    DOTNET462DOWNLOADLINK
+    The URL to download .NET 4.6.2
+
+    DOTNET46DOWNLOADLINK
+    The URL to download .NET 4.6.1
+
+    DOTNET471DOWNLOADLINK
+    The URL to download .NET 4.7.1
+
+    DSCMOFPATH
+    The location where lab DSC MOF files should be stored, e.g. when using the
+    cmdlet
+
+    -LabDscConfiguration
+
+    INVOKELABCOMMANDRETRIES
+    How many times should
+
+    -LabCommand
+
+    be rerun if a terminating error occurs?
+
+    INVOKELABCOMMANDRETRYINTERVALINSECONDS
+    How much time should elapse between the retries of
+
+    -LabCommand
+
+    ?
+
+    LABFILENAME
+    The name of the lab XML configuration file.
+
+    LOGGING
+    This key contains logging options:
+
+    - TruncateLength: How long can a line be?
+    - TruncateTypes: Which .NET types should be truncated?
+    - DefaultFolder: The default log folder
+    - DefaultName: The default log prefix
+    - Level: The minimum level to log
+    - Silent: Log Write-* cmdlets without showing their streams.
+    - AutoStart: Automatically start logging as soon as a Write-* cmdlet is used
+
+    MACHINEFILENAME
+    The machine definition file for a lab.
+
+    MAXPSSESSIONSPERVM
+    The maximum number of WinRM session for each lab VM
+
+    MEMORYWEIGHT_CAROOT
+    MEMORYWEIGHT_CASUBORDINATE
+    MEMORYWEIGHT_CONFIGMANAGER
+    MEMORYWEIGHT_DC
+    MEMORYWEIGHT_DEVTOOLS
+    MEMORYWEIGHT_EXCHANGESERVER
+    MEMORYWEIGHT_FILESERVER
+    MEMORYWEIGHT_FIRSTCHILDDC
+    MEMORYWEIGHT_OPSMGR
+    MEMORYWEIGHT_ORCHESTRATOR
+    MEMORYWEIGHT_ROOTDC
+    MEMORYWEIGHT_SQLSERVER2012
+    MEMORYWEIGHT_SQLSERVER2014
+    MEMORYWEIGHT_WEBSERVER
+    MINIMUMAZUREMODULEVERSION
+    The minimum version of Azure modules required to run. Do not change this to
+    a lower setting, errors will certainly occur.
+
+    NOTIFICATIONPROVIDERS
+    This setting controls which notifications to display: -
+    NotificationProviders: Contains all provider-specific settings   - Ifttt:
+    Specify key and eventname to trigger an event on IFTTT   - Mail: Specify
+    port, server, to, from, prio and CC   - Toast: Use a different image file
+    for your Toast. Will be downloaded with Get-LabInternetFile.   - Voice:
+    Control voice settings to use. If a culture is selected, ensure that the
+    voice pack is installed. Otherwise reverts to English.
+
+    OFFICEDEPLOYMENTTOOL
+    OPENSSHURI
+    Not currently in use: The URL to download OpenSsh from if the binary cannot
+    be found.
+
+    SETLOCALINTRANETSITES
+    SQL2016MANAGEMENTSTUDIO
+    The download link to SSMS 2016
+
+    SQL2017MANAGEMENTSTUDIO
+    The download link to SSMS 2017
+
+    SQLSERVER2008
+    The sample database for SQL Server 2008
+
+    SQLSERVER2008R2
+    The sample database for SQL Server 2008 R2
+
+    SQLSERVER2012
+    The sample database for SQL Server 2012
+
+    SQLSERVER2014
+    The sample database for SQL Server 2014
+
+    SQLSERVER2016
+    The sample database for SQL Server 2016
+
+    SQLSERVER2017
+    The sample database for SQL Server 2017
+
+    SQLSERVER2019
+    The sample database for SQL Server 2019
+
+    SUBSCRIBEDPROVIDERS
+    The subscribed notification providers to use.
+
+    SUPPORTGEN2VMS
+    Indicates that AutomatedLab should use Gen2 Hyper-V VMs
+
+    SYSINTERNALSDOWNLOADURL
+    The URL to download the current version of the SysInternals suite.
+
+    SYSINTERNALSURL
+    The URL to check for the current version of the SysInternals Suite.
+
+    TIMEOUT_DCPROMOTIONADWSREADY
+    The timeout in minutes AutomatedLab waits for the Active Directory Web
+    Services to respond.
+
+    TIMEOUT_DCPROMOTIONRESTARTAFTERDCPROMO
+    The timeout in minutes to wait for a domain controller to finish restarting
+    after DCPromo.
+
+    TIMEOUT_INSTALLLABCAINSTALLATION
+    The timeout in minutes the installation of a Certificate Authority may take.
+
+    TIMEOUT_RESTARTLABMACHINE_SHUTDOWN
+    The timeout in minutes to wait for the shutdown of a lab VM during
+
+    -LabVm
+
+    , which stops and then starts the VM.
+
+    TIMEOUT_SQL2008INSTALLATION
+    The timeout in minutes to wait for the SQL Server 2008 installation to
+    finish.
+
+    TIMEOUT_SQL2012INSTALLATION
+    The timeout in minutes to wait for the SQL Server 2012 installation to
+    finish.
+
+    TIMEOUT_SQL2014INSTALLATION
+    The timeout in minutes to wait for the SQL Server 2014 installation to
+    finish.
+
+    TIMEOUT_STARTLABMACHINE_ONLINE
+    The timeout in minutes to wait for a lab VM to start.
+
+    TIMEOUT_STOPLABMACHINE_SHUTDOWN
+    The timeout in minutes to wait for a lab VM to stop.
+
+    TIMEOUT_VISUALSTUDIO2013INSTALLATION
+    The timeout for a Visual Studio 2013 installation.
+
+    TIMEOUT_VISUALSTUDIO2015INSTALLATION
+    The timeout for a Visual Studio 2015 installation.
+
+    TIMEOUT_WAITLABMACHINE_ONLINE
+    The timeout in minutes for
+
+    -LabMachine
+
+    VALIDATIONSETTINGS
+    These settings relate to the lab validation.
+    - ValidRoleProperties: For each role, define the valid role properties to
+    check for. Please do not change this setting unless you are debugging or
+    developing AutomatedLab.
+    - For each role, define the mandatory role properties to check for. Please
+    do not change this setting unless you are debugging or developing AutomatedLab.
+    AutomatedLab can do more than just create an on-premises or a cloud lab -
+    you can also connect your labs through an IPSEC VPN.
+
+    PREREQUISITES
+    - Two labs. At least one lab needs to be an Azure-based lab. The second lab
+    can be on-premises or on Azure
+    - OR: One lab and one IPSEC VPN Gateway using a pre-shared key, e.g. to
+    accommodate your environment at another cloud provider
+    - If using an on-premises lab: A machine with the Routing role (
+
+    -LabVm -Role Routing
+
+    ) - Non-overlapping address spaces for each lab and (at the moment)
+    different domains for each lab
+    - 10-30 minutes of time to wait for the connection to be made
+
+    HOW DOES IT WORK
+    Connecting the labs is very simple. There are three cmdlets related to lab
+    connections:
+
+
+    Connect-Lab
+    Restore-LabConnection
+    Disconnect-Lab
+
+
+
+    CONNECT-LAB
+    The first cmdlet allows you to actually connect two labs together. You
+    simply need the lab names for this to work.
+
+
+    Get-Lab -List
+    Connect-Lab -SourceLab OnPremTest -DestinationLab AzureTest -Verbose
+
+
+    Assuming your labs are OnPremTest and AzureTest Connect-Lab will now attempt
+    to do the following: - Extend your Azure address spaces to accommodate
+    gateway subnets
+    - Create Virtual Network Gateways and Local Network Gateways, Gateway
+    Connections and the necessary public IP address
+    - Configure your on-premises routing VM with a site-to-site interface that
+    connects to the Local Network Gateway on Azure using a pre-shared key
+    - Configure a static route to your destination address spaces
+    - Configure a DNS conditional forwarder for your remote lab domain
+
+    All this can take between 10 and 15 minutes, depending on how long it takes
+    to create the Gateway resources on Azure.
+
+    Connecting two Azure-based labs works similarly with the only difference
+    being that you do not need a routing machine. Instead, the appropriate
+    network gateways will be created in both resource groups, allowing you to
+    automatically configure a VPN connection across subscription and region
+    boundaries.
+
+    In order to connect your on-premises lab to any IPSEC VPN gateway with a
+    pre-shared key, use the second parameter set:
+
+
+    Connect-Lab -SourceLab OnPremises -DestinationIpAddress 1.2.3.4 -PreSharedKey "SomePsk!" -AddressSpace "10.10.0.0/16","192.168.27.0/24"
+
+
+    The destination IP needs to be either a static public IP or a resolvable
+    hostname of your remote VPN gateway. The pre-shared key needs to match you
+    gateway's key. For any address spaces that should be routed through your VPN
+    connection originating in your lab, just specify them comma-separated.
+
+
+    RESTORE-LABCONNECTION
+    If your own public IP address changes or you experience connectivity issues
+    within your lab environment, chances are that either the public IP of your
+    Azure gateway or of your on-premises lab have changed. Using the cmdlet
+    Restore-LabConnection, we take measures to correct these basic issues:
+
+
+    Restore-LabConnection -SourceLab OnPremisesLab -DestinationLab AzureLab
+
+
+    Restore-LabConnection will reconfigure any IP addresses that might have
+    changed in order to restore the connection.
+
+
+    DISCONNECT-LAB
+    If you want to disconnect your lab and discard the resources that have been
+    created, just call the cmdlet Disconnect-Lab. This will undo all steps that
+    were previously taken in Connect-Lab.
+
+Summary
+    Adding roles to AutomatedLab was painful and complicated and almost only
+    possible if you know the internals of AutomatedLab and how all the parts are
+    interconnected. The concept of custom roles have been introduced to quickly
+    add new roles to AutomatedLab by just copying some files to the
+    LabSources\CustomRoles folder.
+    Custom roles can be defined by just one file or can be quite complex. A very
+    simple one that explains all the features of custom roles is the
+    DemoCustomRole
+    . When assigning a custom role to a machine you can specify parameters to
+    make the use flexible.
+    At the moment, the following custom roles exist: - CM-2002, CM-1902 to
+    deploy System Center Configuration Manager
+    - LabBuilder to deploy a REST API using polaris on a nested Hyper-V which
+    can be used to deploy labs
+    - MDT
+    - Exchange2016, Exchange2019 to deploy the respective Exchange version
+    - NuGetServer to deploy a simple ASP.NET page that includes the NuGet.Server package
+    - PowerShellWebAccess to enable PowerShell Web Access (PSWA) on a VM
+    - ProGet5 to install Inedo ProGet
+
+    THE CONCEPT IN SHORT
+    SIMPLE CUSTOM ROLE
+    Defining a new custom role is as simple as that: - Create a new folder in
+    LabSources\CustomRoles named after your role, for example TestRole.
+    - Create a PS1 file in the newly created folder with the same name (TestRole.ps1).
+    You are done. Now the AutomatedLab cmdlet Get-LabPostInstallationActivity
+    will pick up that new role when using the parameter CustomRole (if
+    powershell auto-comlete is quick enough and does not time out). That role
+    can be passed to a machine then
+
+    $role = Get-LabPostInstallationActivity -CustomRole TestRole
+    Add-LabMachineDefinition -Name TestServer -PostInstallationActivity $role
+
+    During the deployment, AutomatedLab sends the TestRole folder to the virtual
+    machine and runs the script 'TestRole.ps1' there remotely. This is the most
+    simple implementation. There are no parameters, just a single script and no
+    local activities.
+
+    RUNNING LOCAL ACTIVITIES ON THE HOST AS PART OF A CUSTOM ROLE
+    Quite often in order to install a role you need some files from the internet
+    but the VMs are not internet connected. For that the custom role feature
+    looks for two scripts in the custom role folder: - HostStart.ps1 (invoked locally)
+    - <CustomRoleName>.ps1 (invoked remotely on the VM)
+    - HostEnd.ps1 (invoked locally)
+    The HostStart script is run before anything is triggered on the VM and the
+    HostEnd script after the custom role script has been invoked on the VM. It
+    is not mandatory to have all three scripts. You can have a custom role with
+    just a HostStart script running locally and no custom role script or with
+    just a custom role script and nothing that runs on the host. A good example
+    is the MDT custom role.
+
+    CUSTOM ROLE PARAMETERS
+    Parameters can be defined as well like this:
+
+    $role = Get-LabPostInstallationActivity -CustomRole TestRole -Properties @{ param1 = 'Test'; param2 = 100}
+
+    AutomatedLab will throw an error if the custom role script's parameters do
+    not match the hashtable defined. It also checks for mandatory parameters in
+    the script and throws an error if these are not assigned in the properties hashtable.
+    If you use HostStart and / or HostEnd scripts, AutomatedLab verifies the
+    properties hashtable against all these scripts. The hashtable will be
+    filtered before invoking the scripts and splatting the parameters. The
+    DemoCustomRole shows this.
+
+    MORE COMPLEX CUSTOM ROLE
+    As AutomatedLab copies the whole folder to the machine the role is assigned
+    to, you can also have a script that calls other scripts. For example
+    TestRole.ps1 could look like this:
+
+    & $PSScriptRoot\Init.ps1
+    & $PSScriptRoot\Install.ps1
+    & $PSScriptRoot\Customizations.ps1
+
+    The same pattern can be used for HostStart and HostEnd as well. You do not
+    have to put all the logic in just one file.
+
+    DEMO ROLES
+    AutomatedLab comes with some some roles. *
+    DemoCustomRole
+    : This is a easy sample that shows how the parameter handling works and how
+    the files are related to each other. *
+    MDT
+    that is invoked on the lab VM. *
+    ProGet5
+    : This role installs an Inedo ProGet server, also without a custom role
+    script. All the orchestration is done locally on the host. Getting lab
+    notifications from the AutomatedLab notification hub is very easy. The
+    default notification method on Windows 10/Server 2016 is a toast
+    notification in the notification center. Install-Lab already makes use of
+    the notification hub to send a notification each time a lab starts and
+    finishes installing.
+
+    The current providers that can be used to send notifications are Toast,
+    IFTTT and Mail. All provider-related settings can be accessed from the
+    module manifest of the module AutomatedLabNotifications. To subscribe to one
+    or more providers, simply add them to the NotificationProviders key of the
+    AutomatedLab module manifest.
+
+    To use the notification hub in your own scripts, you can use the function:
+
+
+    Send-ALNotification -Activity 'Your activity' -Message 'Your detailed message here' -Provider Toast,Ifttt
+
+
+    The module AutomatedLabNotification knows all it's providers by looking at
+    it's module manifest. To add your own, custom provider, you only need to add
+    it to this list as well as create a PowerShell script called
+    Send-AL<YourProviderName>Notification in the modules Private subfolder. This
+    script needs to contain the function Send-AL<YourProviderName>Notification
+    and this function needs to implement the Parameters Activity and Message.
+
+    Example:
+
+
+    function Send-ALCustomProviderNotification
+    {
+    param
+        (
+            [Parameter(Mandatory = $true)]
+            [System.String]
+            $Activity,
+    
+            [Parameter(Mandatory = $true)]
+            [System.String]
+            $Message
+        )
+    }
+
+    To store user-specific settings like keys, ports, ... make use of the
+    PrivateData hashtable inside the module manifest of
+    AutomatedLabNotification:
+
+
+    PrivateData            = @{
+    
+            Ifttt = @{
+                
+                Key       = "Your IFTTT key here"
+                EventName = "The name of your IFTTT event"
+            }
+    
+            Mail  = @{
+                To         = "Your recipient array here"
+                CC         = "Your CC array here"
+                SmtpServer = "Your SMTP server here"
+                From       = "Your sender here"
+                Priority   = "Normal"
+                Port       = 25
+            }
+    
+            Toast = @{
+                Provider = 'AutomatedLab'
+            }
+    
+        }
+
+
+    To work with IFTTT, simply create a Webhook applet
+    (https://ifttt.com/maker_webhooks). You can find your key here:
+    https://ifttt.com/services/maker_webhooks/settings. You also need the event
+    name of your applet.
+
+    Last but not least: If you think of a cool provider, just develop it and
+    send us your pull request!
+
+Renaming used resources
+    AutomatedLab offers the ability to select different resource names for your
+    lab machines as well as virtual switches. While this feature is mainly
+    intended for on-premises hypervisors like Hyper-V, Azure-based labs can also
+    make use of the new resource naming.
+    This feature is very useful for classroom deployments if students are using
+    a shared hypervisor, as the same lab can be deployed multiple times.
+    Both `Add-LabVirtualNetworkDefinition` as well as `Add-LabMachineDefinition`
+    can use the `ResourceName` parameter.
+    *
+    Important: This feature does not overcome the boundaries of networking on
+    Hyper-V. Remember to use non-overlapping address spaces for each lab
+    network, as shown in the example.
+
+    For various reasons, AutomatedLab uses Internal virtual switches on Hyper-V.
+    *
+
+    EXAMPLE
+    foreach ($studentNumber in (1..10))
+    {
+        New-LabDefinition -Name "$($studentNumber)POSH" -DefaultVirtualizationEngine HyperV
+        Add-LabVirtualNetworkDefinition -Name VMNet -ResourceName "$($studentNumber)VMNet" -AddressSpace "192.168.$($studentNumber).0/24"
+        Add-LabMachineDefinition -Name DC01 -ResourceName "$($studentNumber)DC01" -Roles RootDC -Domain contoso.com -OperatingSystem 'Windows Server 2016 Datacenter'
+        Install-Lab
+    }
+
+    In the sample, the resources deployed on Hyper-V will be prefixed with
+    Studentxx, while each student uses the VM host name to interact with the
+    machine. Specifying a resource name for the virtual network adapter in this
+    case would not be necessary, as the default adapter name is equal to the lab
+    name.
+
+Running AutomatedLab on a Hyper-V Cluster
+    While AutomatedLab was not designed to work with CIM sessions, you can
+    install AutomatedLab on one or more cluster nodes.
+    To use AutomatedLab on a clustered Hyper-V, e.g. an S2D cluster, go about
+    the configuration like you normally would! The main difference is: Your VM
+    path should now be a CSV (cluster-shared volume), and it is probably a good
+    idea to store your ISO files either on a network share or in another CSV.
+
+    New-LabDefinition -Name IsOnCluster -DefaultVirtualizationEngine HyperV -VmPath C:\ClusterStorage\ALVMS
+    
+    Add-LabVirtualNetworkDefinition -Name ClusterNet -AddressSpace 172.16.0.0/24 -HyperVProperties @{SwitchType = 'External'; AdapterName = 'eth0'}
+    Add-LabMachineDefinition -Name test -Memory 4GB -OperatingSystem 'Windows Server 2019 Datacenter' -Network ClusterNet -IpAddress 172.16.0.199
+    Install-Lab
+
+    All lab VMs will automatically be added as a cluster role, and removed
+    properly when the lab or the VM is removed. To disable this behavior, the
+    setting `DoNotAddVmsToCluster` has been added. To change this setting:
+
+    ## Disable auto-add
+    Set-PSFConfig -FullName AutomatedLab.DoNotAddVmsToCluster -Value $true -PassThru | Register-PSFConfig
+    ## Enable auto-add - default
+    Set-PSFConfig -FullName AutomatedLab.DoNotAddVmsToCluster -Value $false -PassThru | Register-PSFConfig
+
+    Activities like live migrations depend on your configuration of course. You
+    will not be able to live-migrate a VM that is connected to internal switches
+    - the rules still apply ;)
+
+Use Powershell Desired State Configuration (DSC)
+    `Invoke-LabDSCConfiguration` is the counterpart to `Invoke-LabCommand`. As
+    described in
+    Running custom commands using `Invoke-LabCommand`
+    , `Invoke-LabCommand` is a very powerful cmdlet to customize your lab
+    environment after the initial deployment. `Invoke-LabDSCConfiguration` can
+    be even more powerful if your customizations can be achieved using
+    PowerShell DSC.
+    `Invoke-LabDSCConfiguration` offers the same level of comfort as
+    `Invoke-LabCommand`, maybe even more as it handles also some of the
+    complexities coming with DSC. You do not have to care about authentication,
+    copying resources or configuring the Local Configuration Manager (if in push mode).
+    > Note: If you are not familiar with DSC, please consult the documentation
+    published on MSDN
+    Windows PowerShell Desired State Configuration Overview
+    .
+    In order to use `Invoke-LabDSCConfiguration`, you have to define a local
+    configuration on your host machine and you must have the required DSC
+    resources available on your host machine as well. To demonstrate how
+    `Invoke-LabDSCConfiguration` works, this article features two demos. The
+    first is extremely simple and does not use any non-standard DSC resources.
+    The second is much more complex, uses the
+    `xWebAdministration`
+    DSC Resource and configuration data.
+
+    DEMO 1
+    This configuration is just creating a single file with whatever content you
+    define in the configuration data. The MOF file is created locally on the
+    host in \LabSources\DscConfigurations. The MOF file is then pushed to the
+    lab machines specified by the ComputerName parameter and the Local
+    Configuration Manager (LCM) is configured accordingly with default values.
+    The configuration will be applied each 15 minutes on the lab VMs unless you
+    re-configure the LCM or overwrite the configuration.
+    `Import-Lab` is used to make the lab data available in a new PowerShell
+    session.
+
+    PowerShell
+    Import-lab -Name POSH -NoValidation
+    
+    configuration Demo1
+    {
+        File TestFile1
+        {
+            DestinationPath = 'C:\TestFile1.txt'
+            Ensure = 'Present'
+            Contents = $ConfigurationData.FileContent
+        }
+    }
+    
+    $ConfigurationData = @{
+        AllNodes = @()
+        FileContent = '123'
+    }
+    
+    Invoke-LabDscConfiguration -Configuration (Get-Command -Name Demo1) `
+    -ConfigurationData $ConfigurationData -ComputerName poshfs1
+
+    To re-apply an existing configuration on a lab machine, you can use this
+    command:
+
+    PowerShell
+    Invoke-LabDscConfiguration -ComputerName poshfs1 -UseExisting
+
+    DEMO 2
+    In next example, a web site is configured on two lab machines using the DSC
+    resource `xWebAdministration`. `Invoke-LabDSCConfiguration` pushes the
+    configuration including the DSC resource to all machines specified.
+    The `xWebAdministration` DSC resource is required on the host computer. If
+    this is not there, you can install it right from the PowerShell Gallery like
+    this:
+
+    PowerShell
+    Install-Module -Name xWebAdministration
+
+    This demo configuration was taken from the
+    `xWebAdministration`
+    main page and slightly modified.
+    > Note: The function `Get-DscConfigurationImportedResource` is used to
+    discover all the DSC resources used within a configuration so you do not
+    have to care about that.
+
+    PowerShell
+    Configuration Sample_xWebsite_FromConfigurationData
+    {
+        # Import the module that defines custom resources
+        Import-DscResource -Module xWebAdministration
+    
+        # Dynamically find the applicable nodes from configuration data
+        Node $AllNodes.where{$_.Role -eq "Web"}.NodeName
+        {
+            File DemoFile 
+            {
+                DestinationPath = 'C:\BakeryWebsite\index.html'
+                Ensure = 'Present'
+                Type = 'File'
+                Contents = 'Test Web Site'
+                Force = $true
+            }
+            # Install the IIS role
+            WindowsFeature IIS
+            {
+                Ensure          = "Present"
+                Name            = "Web-Server"
+    
+            }
+    
+            WindowsFeature IISManagement
+            {
+                Ensure          = "Present"
+                Name            = "Web-Mgmt-Tools"
+            }
+            
+            # Install the ASP .NET 4.5 role
+            WindowsFeature AspNet45
+            {
+                Ensure          = "Present"
+                Name            = "Web-Asp-Net45"
+            }
+    
+            # Stop an existing website (set up in Sample_xWebsite_Default)
+            xWebsite DefaultSite
+            {
+                Ensure          = "Present"
+                Name            = "Default Web Site"
+                State           = "Stopped"
+                PhysicalPath    = $Node.DefaultWebSitePath
+                DependsOn       = "[WindowsFeature]IIS"
+            }
+    
+            # Copy the website content
+            File WebContent
+            {
+                Ensure          = "Present"
+                SourcePath      = $Node.SourcePath
+                DestinationPath = $Node.DestinationPath
+                Recurse         = $true
+                Type            = "Directory"
+                DependsOn       = "[WindowsFeature]AspNet45"
+            }
+    
+            # Create a new website
+            xWebsite BakeryWebSite
+            {
+                Ensure          = "Present"
+                Name            = $Node.WebsiteName
+                State           = "Started"
+                PhysicalPath    = $Node.DestinationPath
+                DependsOn       = "[File]WebContent"
+            }
+        }
+    }
+    
+    ## Content of configuration data file (e.g. ConfigurationData.psd1) could be:
+    ## Hashtable to define the environmental data
+    $ConfigurationData = @{
+        # Node specific data
+        AllNodes = @(
+           # All the WebServer has following identical information
+           @{
+                NodeName           = "*"
+                WebsiteName        = "FourthCoffee"
+                SourcePath         = "C:\BakeryWebsite\"
+                DestinationPath    = "C:\inetpub\FourthCoffee"
+                DefaultWebSitePath = "C:\inetpub\wwwroot"
+           },
+           @{
+                NodeName           = "poshdc1.contoso.com"
+                Role               = "Web"
+            },
+           @{
+                NodeName           = "poshdc2.contoso.com"
+                Role               = "Web"
+            }
+        )
+    }
+    ## Pass the configuration data to configuration as follows:
+    ##Sample_xWebsite_FromConfigurationData -ConfigurationData $ConfigurationData -OutputPath C:\DscConfigs
+    
+    Invoke-LabDscConfiguration -Configuration (Get-Command -Name Sample_xWebsite_FromConfigurationData) -ConfigurationData $ConfigurationData -ComputerName poshdc1
+
