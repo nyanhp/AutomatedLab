@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462;net6.0</TargetFrameworks>
+    <TargetFrameworks>net462;net9.0</TargetFrameworks>
     <AssemblyName>AutomatedLab</AssemblyName>
     <RootNamespace>AutomatedLab</RootNamespace>
     <Version>1.0.0</Version>
