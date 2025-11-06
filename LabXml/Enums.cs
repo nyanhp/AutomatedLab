@@ -103,7 +103,8 @@ namespace AutomatedLab
         ConfigurationManager = 36028797018963968,
         Scvmm2022 = 72057594037927936,
         SQLServer2022 = 144115188075855872,
-        SQLServer2025 = 288230376151711744
+        SQLServer2025 = 288230376151711744,
+        Kubernetes = 576460752303423488
     }
 
     public enum ActiveDirectoryFunctionalLevel
