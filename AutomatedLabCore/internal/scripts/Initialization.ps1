@@ -887,7 +887,6 @@ ECDSA_P384#Microsoft Smart Card Key Storage Provider =>'sha256','sha384','sha512
             'UseMicrosoftUpdate'            = '[string] 0 or 1, incicates that MS Update should be used. Defaults to 0'
             'AcceptEndUserLicenseAgreement' = '[string] Accept EULA. Defaults to 1. THERE IS NO POINT OF USING 0 IN A LAB'
         }
-
         ScomWebConsole           = @{
             'ManagementServer'              = '[string] Name of the SCOM management server'
             'WebSiteName'                   = '[string] Name of the website to host. Defaults to Default Web Site'
@@ -895,8 +894,7 @@ ECDSA_P384#Microsoft Smart Card Key Storage Provider =>'sha256','sha384','sha512
             'SendCEIPReports'               = '[string] 0 or 1, indicates that CEIP reports should be sent. Defaults to 0'
             'UseMicrosoftUpdate'            = '[string] 0 or 1, incicates that MS Update should be used. Defaults to 0'
             'AcceptEndUserLicenseAgreement' = '[string] Accept EULA. Defaults to 1. THERE IS NO POINT OF USING 0 IN A LAB'
-        }
-                
+        }                
         FailoverNode             = @{
             'ClusterName' = '[string] The name of the cluster the node will join.'
             'ClusterIP'   = '[string] The IP address of the cluster.'
@@ -1076,7 +1074,14 @@ ECDSA_P384#Microsoft Smart Card Key Storage Provider =>'sha256','sha384','sha512
             'WsusContentPath' = '[string] WSUS content directory'
             'AdminUser'       = '[string] Name of admin user'
             'ProductId'       = '[string] Product Key'
-        }        
+        }
+        Kubernetes               = @{
+            ClusterName = '[string] Name of the cluster. Defaults to "kubernetes"'
+            NodeRole    = '[string] Node role. Currently, setup ignores node roles, and deploys one master with additional workers. Intended for future use such as etcd, ...'
+            CriType     = '[string] Container Runtime Interface, currently only CRI-O is supported'
+            CniType     = '[string] Cluster Network Interface, currently only Tigera Calico is supported'
+            CsiType     = '[string] Cluster Storage Interface, currently only SMB is supported'
+        }
     }
     MandatoryRoleProperties = @{
         ADFSProxy = @(

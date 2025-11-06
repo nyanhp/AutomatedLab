@@ -102,7 +102,8 @@ namespace AutomatedLab
         RDS = RemoteDesktopConnectionBroker | RemoteDesktopGateway | RemoteDesktopLicensing | RemoteDesktopSessionHost | RemoteDesktopVirtualizationHost | RemoteDesktopWebAccess,
         ConfigurationManager = 36028797018963968,
         Scvmm2022 = 72057594037927936,
-        SQLServer2022 = 144115188075855872
+        SQLServer2022 = 144115188075855872,
+        Kubernetes = 288230376151711744
     }
 
     public enum ActiveDirectoryFunctionalLevel
