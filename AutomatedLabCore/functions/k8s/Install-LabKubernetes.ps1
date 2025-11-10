@@ -23,7 +23,7 @@ function Install-LabKubernetes {
     }
 
     foreach ($machine in $machines) {
-        $roleParams = $machine.Role | Where-Object { $_.Name -eq 'Kubernetes' } | Select-Object -ExpandProperty Properties -ErrorAction SilentlyContinue
+        $roleParams = ($machine.Role | Where-Object Name -eq 'Kubernetes').Properties
         Write-PSFMessage "Installing Kubernetes on $($machine.Name) ($($machine.OperatingSystem))..."
         
         switch ($machine.OperatingSystem) {
