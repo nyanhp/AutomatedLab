@@ -568,6 +568,26 @@
             }
         }
 
+        $kubeRole = $roles | Where-Object Name -eq Kubernetes
+        if ($kubeRole) {
+            if (-not $kubeRole.Properties.ContainsKey('ClusterName'))
+            {
+                $kubeRole.Properties.Add('ClusterName', 'kubernetes')
+            }
+            if (-not $kubeRole.Properties.ContainsKey('CriType'))
+            {
+                $kubeRole.Properties.Add('CriType', 'crio')
+            }
+            if (-not $kubeRole.Properties.ContainsKey('CniType'))
+            {
+                $kubeRole.Properties.Add('CniType', 'calico')
+            }
+            if (-not $kubeRole.Properties.ContainsKey('CsiType'))
+            {
+                $kubeRole.Properties.Add('CsiType', 'smb')
+            }
+        }
+
         #Virtual network detection and automatic creation
         if ($VirtualizationHost -eq 'Azure')
         {
