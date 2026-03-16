@@ -9,7 +9,6 @@ namespace AutomatedLab
     public class InstallationActivity
     {
         private Path dependencyFolder;
-        private string scriptFileName;
         private string scriptFilePath;
         private bool keepFolder;
         private Path isoImage;
@@ -32,29 +31,10 @@ namespace AutomatedLab
             set { dependencyFolder = value; }
         }
 
-        public string ScriptFilePath
-        {
-            get { return scriptFilePath; }
-            set
-            {
-                if (string.IsNullOrEmpty(scriptFileName))
-                {
-                    scriptFilePath = value;
-                }
-            }
-        }
+        public string ScriptFilePath { get; set; }
+        
+        public string RemoteScriptFilePath { get; set; }
 
-        public string ScriptFileName
-        {
-            get { return scriptFileName; }
-            set
-            {
-                if (string.IsNullOrEmpty(scriptFilePath))
-                {
-                    scriptFileName = value;
-                }
-            }
-        }
 
         public bool KeepFolder
         {
@@ -75,16 +55,7 @@ namespace AutomatedLab
             set { isCustomRole = value; }
         }
 
-        public string RoleName
-        {
-            get
-            {
-                if (!string.IsNullOrEmpty(scriptFileName))
-                    return ScriptFileName.Split('.')[0];
-                else
-                    return string.Empty;
-            }
-        }
+        public string RoleName { get; set; }
 
         public bool DoNotUseCredSsp
         {

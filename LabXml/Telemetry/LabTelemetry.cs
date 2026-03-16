@@ -112,7 +112,7 @@ namespace AutomatedLab
             if (!GetEnvironmentVariableAsBool(_telemetryOptInVar, false)) return;
             var lab = Lab.Import(labData);
             lab.Machines.ForEach(m => SendUsedRole(m.Roles.Select(r => r.Name.ToString()).ToList()));
-            lab.Machines.ForEach(m => SendUsedRole(m.PostInstallationActivity.Where(p => p.IsCustomRole).Select(c => System.IO.Path.GetFileNameWithoutExtension(c.ScriptFileName)).ToList(), true));
+            lab.Machines.ForEach(m => SendUsedRole(m.PostInstallationActivity.Where(p => p.IsCustomRole).Select(c => System.IO.Path.GetFileNameWithoutExtension(c.ScriptFilePath)).ToList(), true));
 
             var properties = new Dictionary<string, string>
             {
