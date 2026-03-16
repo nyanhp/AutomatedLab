@@ -1,27 +1,15 @@
-﻿function Get-LabInstallationActivity
-{
+﻿function Get-LabInstallationActivity {
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory, ParameterSetName = 'FileContentDependencyRemoteScript')]
-        [Parameter(Mandatory, ParameterSetName = 'FileContentDependencyLocalScript')]
         [string]$DependencyFolder,
 
-        [Parameter(Mandatory, ParameterSetName = 'IsoImageDependencyRemoteScript')]
-        [Parameter(Mandatory, ParameterSetName = 'IsoImageDependencyLocalScript')]
-        [string]$IsoImage,
-
-        [Parameter(ParameterSetName = 'FileContentDependencyRemoteScript')]
-        [Parameter(ParameterSetName = 'FileContentDependencyLocalScript')]
-        [Parameter(ParameterSetName = 'CustomRole')]
         [switch]$KeepFolder,
 
-        [Parameter(Mandatory, ParameterSetName = 'FileContentDependencyRemoteScript')]
-        [Parameter(Mandatory, ParameterSetName = 'IsoImageDependencyRemoteScript')]
-        [string]$ScriptFileName,
-
-        [Parameter(Mandatory, ParameterSetName = 'IsoImageDependencyLocalScript')]
-        [Parameter(Mandatory, ParameterSetName = 'FileContentDependencyLocalScript')]
+        [Parameter(Mandatory, ParameterSetName = 'LocalScript')]
         [string]$ScriptFilePath,
+
+        [Parameter(Mandatory, ParameterSetName = 'RemoteScript')]
+        [string]$RemoteScriptFilePath,
 
         [Parameter(ParameterSetName = 'CustomRole')]
         [hashtable]$Properties,
@@ -32,65 +20,46 @@
 
         [switch]$DoNotUseCredSsp,
 
+        [Parameter(Mandatory, ParameterSetName = 'CustomRole')]
         [string]$CustomRole
     )
 
-    begin
-    {
+    begin {
         Write-LogFunctionEntry
         $activity = New-Object -TypeName AutomatedLab.InstallationActivity
-        if ($Variable) { $activity.SerializedVariables = $Variable | ConvertTo-PSFClixml}
-        if ($Function) { $activity.SerializedFunctions = $Function | ConvertTo-PSFClixml}
-        if (-not $Properties)
-        {
+        if ($Variable) { $activity.SerializedVariables = $Variable | ConvertTo-PSFClixml }
+        if ($Function) { $activity.SerializedFunctions = $Function | ConvertTo-PSFClixml }
+        if (-not $Properties) {
             $Properties = @{ } 
+        }
+        if ($ScriptFilePath) {
+            $activity.ScriptFilePath = $ScriptFilePath
+        }
+        if ($RemoteScriptFilePath) {
+            $activity.RemoteScriptFilePath = $RemoteScriptFilePath
         }
     }
 
-    process
-    {
-        if ($PSCmdlet.ParameterSetName -like 'FileContentDependency*')
-        {
+    process {
+        if ($DependencyFolder) {
             $activity.DependencyFolder = $DependencyFolder
             $activity.KeepFolder = $KeepFolder.ToBool()
-            if ($ScriptFilePath)
-            {
-                $activity.ScriptFilePath = $ScriptFilePath
-            }
-            else
-            {
-                $activity.ScriptFileName = $ScriptFileName
-            }
         }
-        elseif ($PSCmdlet.ParameterSetName -like 'IsoImage*')
-        {
-            $activity.IsoImage = $IsoImage
-            if ($ScriptFilePath)
-            {
-                $activity.ScriptFilePath = $ScriptFilePath
-            }
-            else
-            {
-                $activity.ScriptFileName = $ScriptFileName
-            }
-        }
-        elseif ($PSCmdlet.ParameterSetName -eq 'CustomRole')
-        {
+        elseif ($PSCmdlet.ParameterSetName -eq 'CustomRole') {
             $activity.DependencyFolder = Join-Path -Path (Join-Path -Path (Get-LabSourcesLocation -Local) -ChildPath 'CustomRoles') -ChildPath $CustomRole
-            $activity.KeepFolder = $KeepFolder.ToBool()
-            $activity.ScriptFileName = "$CustomRole.ps1"
+            $activity.KeepFolder = $KeepFolder.IsPresent
+            $activity.RoleName = $CustomRole
+            $activity.ScriptFilePath = Join-Path -Path $activity.DependencyFolder -ChildPath "$($CustomRole).ps1"
             $activity.IsCustomRole = $true
 
             #The next sections compares the given custom role properties with with the custom role parameters.
             #Custom role parameters are taken form the main role script as well as the HostStart.ps1 and the HostEnd.ps1
-            $scripts = $activity.ScriptFileName, 'HostStart.ps1', 'HostEnd.ps1'
+            $scripts = "$($CustomRole).ps1", 'HostStart.ps1', 'HostEnd.ps1'
             $unknownParameters = New-Object System.Collections.Generic.List[string]
 
-            foreach ($script in $scripts)
-            {
+            foreach ($script in $scripts) {
                 $scriptFullName = Join-Path -Path $activity.DependencyFolder -ChildPath $script
-                if (-not (Test-Path -Path $scriptFullName))
-                {
+                if (-not (Test-Path -Path $scriptFullName)) {
                     continue
                 }
                 $scriptInfo = Get-Command -Name $scriptFullName
@@ -99,30 +68,23 @@
 
                 #If the custom role knows about a ComputerName parameter and if there is no value defined by the user, add add empty value now.
                 #Later that will be filled with the computer name of the computer the role is assigned to when the HostStart and the HostEnd scripts are invoked.
-                if ($Properties)
-                {
-                    if (($parameters | Where-Object Key -eq 'ComputerName') -and -not $Properties.ContainsKey('ComputerName'))
-                    {
+                if ($Properties) {
+                    if (($parameters | Where-Object Key -eq 'ComputerName') -and -not $Properties.ContainsKey('ComputerName')) {
                         $Properties.Add('ComputerName', '')
                     }
                 }
 
                 #test if all mandatory parameters are defined
-                foreach ($parameter in $parameters)
-                {
-                    if ($parameter.Value.Attributes.Mandatory -and -not $properties.ContainsKey($parameter.Key))
-                    {
+                foreach ($parameter in $parameters) {
+                    if ($parameter.Value.Attributes.Mandatory -and -not $properties.ContainsKey($parameter.Key)) {
                         Write-Error "There is no value defined for mandatory property '$($parameter.Key)' and custom role '$CustomRole'" -ErrorAction Stop
                     }
                 }
 
                 #test if there are custom role properties defined that do not map to the custom role parameters
-                if ($Properties)
-                {
-                    foreach ($property in $properties.GetEnumerator())
-                    {
-                        if (-not $scriptInfo.Parameters.ContainsKey($property.Key) -and -not $unknownParameters.Contains($property.Key))
-                        {
+                if ($Properties) {
+                    foreach ($property in $properties.GetEnumerator()) {
+                        if (-not $scriptInfo.Parameters.ContainsKey($property.Key) -and -not $unknownParameters.Contains($property.Key)) {
                             $unknownParameters.Add($property.Key)
                         }
                     }
@@ -130,36 +92,29 @@
             }
 
             #antoher loop is required to remove all unknown parameters that are added due to the order of the first loop
-            foreach ($script in $scripts)
-            {
+            foreach ($script in $scripts) {
                 $scriptFullName = Join-Path -Path $activity.DependencyFolder -ChildPath $script
-                if (-not (Test-Path -Path $scriptFullName))
-                {
+                if (-not (Test-Path -Path $scriptFullName)) {
                     continue
                 }
                 $scriptInfo = Get-Command -Name $scriptFullName
                 $commonParameters = [System.Management.Automation.Internal.CommonParameters].GetProperties().Name
                 $parameters = $scriptInfo.Parameters.GetEnumerator() | Where-Object Key -NotIn $commonParameters
 
-                if ($Properties)
-                {
-                    foreach ($property in $properties.GetEnumerator())
-                    {
-                        if ($scriptInfo.Parameters.ContainsKey($property.Key) -and $unknownParameters.Contains($property.Key))
-                        {
+                if ($Properties) {
+                    foreach ($property in $properties.GetEnumerator()) {
+                        if ($scriptInfo.Parameters.ContainsKey($property.Key) -and $unknownParameters.Contains($property.Key)) {
                             $unknownParameters.Remove($property.Key) | Out-Null
                         }
                     }
                 }
             }
 
-            if ($unknownParameters.Count -gt 0)
-            {
+            if ($unknownParameters.Count -gt 0) {
                 Write-Error "The defined properties '$($unknownParameters -join ', ')' are unknown for custom role '$CustomRole'" -ErrorAction Stop
             }
 
-            if ($Properties)
-            {
+            if ($Properties) {
                 $activity.SerializedProperties = $Properties | ConvertTo-PSFClixml -ErrorAction SilentlyContinue
             }
         }
@@ -167,8 +122,7 @@
         $activity.DoNotUseCredSsp = $DoNotUseCredSsp
     }
 
-    end
-    {
+    end {
         Write-LogFunctionExit -ReturnValue $activity
         return $activity
     }

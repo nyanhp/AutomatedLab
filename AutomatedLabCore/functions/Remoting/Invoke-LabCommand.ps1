@@ -4,29 +4,19 @@
     param (
         [string]$ActivityName = '<unnamed>',
 
-        [Parameter(Mandatory, ParameterSetName = 'ScriptBlockFileContentDependency', Position = 0)]
-        [Parameter(Mandatory, ParameterSetName = 'ScriptFileContentDependency', Position = 0)]
-        [Parameter(Mandatory, ParameterSetName = 'ScriptFileNameContentDependency', Position = 0)]
         [Parameter(Mandatory, ParameterSetName = 'Script', Position = 0)]
         [Parameter(Mandatory, ParameterSetName = 'ScriptBlock', Position = 0)]
         [Parameter(Mandatory, ParameterSetName = 'PostInstallationActivity', Position = 0)]
         [string[]]$ComputerName,
 
-        [Parameter(Mandatory, ParameterSetName = 'ScriptBlockFileContentDependency', Position = 1)]
         [Parameter(Mandatory, ParameterSetName = 'ScriptBlock', Position = 1)]
         [scriptblock]$ScriptBlock,
 
-        [Parameter(Mandatory, ParameterSetName = 'ScriptFileContentDependency')]
         [Parameter(Mandatory, ParameterSetName = 'Script')]
         [string]$FilePath,
 
-        [Parameter(Mandatory, ParameterSetName = 'ScriptFileNameContentDependency')]
-        [string]$FileName,
-
-        [Parameter(ParameterSetName = 'ScriptFileNameContentDependency')]
-        [Parameter(Mandatory, ParameterSetName = 'ScriptBlockFileContentDependency')]
-        [Parameter(Mandatory, ParameterSetName = 'ScriptFileContentDependency')]
-        [string]$DependencyFolderPath,
+        [Parameter(Mandatory, 'RemoteScript')]
+        [string]$RemoteFilePath,
 
         [Parameter(ParameterSetName = 'PostInstallationActivity')]
         [switch]$PostInstallationActivity,
@@ -49,19 +39,9 @@
 
         [System.Management.Automation.FunctionInfo[]]$Function,
 
-        [Parameter(ParameterSetName = 'ScriptBlock')]
-        [Parameter(ParameterSetName = 'ScriptBlockFileContentDependency')]
-        [Parameter(ParameterSetName = 'ScriptFileContentDependency')]
-        [Parameter(ParameterSetName = 'Script')]
-        [Parameter(ParameterSetName = 'ScriptFileNameContentDependency')]
-        [int]$Retries,
+        [int]$Retries = (Get-LabConfigurationItem -Name InvokeLabCommandRetries),
 
-        [Parameter(ParameterSetName = 'ScriptBlock')]
-        [Parameter(ParameterSetName = 'ScriptBlockFileContentDependency')]
-        [Parameter(ParameterSetName = 'ScriptFileContentDependency')]
-        [Parameter(ParameterSetName = 'Script')]
-        [Parameter(ParameterSetName = 'ScriptFileNameContentDependency')]
-        [int]$RetryIntervalInSeconds,
+        [int]$RetryIntervalInSeconds = (Get-LabConfigurationItem -Name InvokeLabCommandRetryIntervalInSeconds),
 
         [int]$ThrottleLimit = 32,
 
@@ -76,26 +56,6 @@
 
     Write-LogFunctionEntry
     $customRoleCount = 0
-
-    $parameterSetsWithRetries = 'Script',
-        'ScriptBlock',
-        'ScriptFileContentDependency',
-        'ScriptBlockFileContentDependency',
-        'ScriptFileNameContentDependency',
-        'PostInstallationActivity',
-        'PreInstallationActivity'
-
-    if ($PSCmdlet.ParameterSetName -in $parameterSetsWithRetries)
-    {
-        if (-not $Retries)
-        {
-            $Retries = Get-LabConfigurationItem -Name InvokeLabCommandRetries
-        }
-        if (-not $RetryIntervalInSeconds)
-        {
-            $RetryIntervalInSeconds = Get-LabConfigurationItem -Name InvokeLabCommandRetryIntervalInSeconds
-        }
-    }
 
     if ($AsJob)
     {
@@ -245,8 +205,8 @@
                 }
 
                 if ($item.DependencyFolder.Value) { $param.Add('DependencyFolderPath', $item.DependencyFolder.Value) }
-                if ($item.ScriptFileName) { $param.Add('ScriptFileName',$item.ScriptFileName) }
                 if ($item.ScriptFilePath) { $param.Add('ScriptFilePath', $item.ScriptFilePath) }
+                if ($item.RemoteScriptFilePath) { $param.Add('RemoteScriptFilePath', $item.RemoteScriptFilePath) }
                 if ($item.KeepFolder) { $param.Add('KeepFolder', $item.KeepFolder) }
                 if ($item.ActivityName) { $param.Add('ActivityName', $item.ActivityName) }
                 if ($Retries) { $param.Add('Retries', $Retries) }
@@ -259,7 +219,7 @@
                     $param.Add('ThrottleLimit', $ThrottleLimit)
                 }
 
-                $scriptFullName = Join-Path -Path $param.DependencyFolderPath -ChildPath $param.ScriptFileName
+                $scriptFullName = $param.ScriptFilePath
                 if ($item.SerializedProperties -and (Test-Path -Path $scriptFullName))
                 {
                     $script = Get-Command -Name $scriptFullName
@@ -359,10 +319,10 @@
             $ScriptBlock = [scriptblock]::Create($scriptContent)
         }
 
+        if ($RemoteFilePath)         { $param.Add('RemoteScriptFilePath', $RemoteFilePath) }
         if ($ScriptBlock)            { $param.Add('ScriptBlock', $ScriptBlock) }
         if ($Retries)                { $param.Add('Retries', $Retries) }
         if ($RetryIntervalInSeconds) { $param.Add('RetryIntervalInSeconds', $RetryIntervalInSeconds) }
-        if ($FileName)               { $param.Add('ScriptFileName', $FileName) }
         if ($ActivityName)           { $param.Add('ActivityName', $ActivityName) }
         if ($ArgumentList)           { $param.Add('ArgumentList', $ArgumentList) }
         if ($DependencyFolderPath)   { $param.Add('DependencyFolderPath', $DependencyFolderPath) }
