@@ -403,9 +403,10 @@ Set-PSFConfig -Module AutomatedLab -Name SqlSmo2016 -Value "https://download.mic
 Set-PSFConfig -Module AutomatedLab -Name Dynamics365Uri -Value 'https://download.microsoft.com/download/B/D/0/BD0FA814-9885-422A-BA0E-54CBB98C8A33/CRM9.0-Server-ENU-amd64.exe' -Initialize -Validation String -Description 'Dynamics 365 Download URI, defaults to CRM9.0'
 
 # Exchange Server
-Set-PSFConfig -Module AutomatedLab -Name Exchange2013DownloadUrl -Value 'https://download.microsoft.com/download/7/F/D/7FDCC96C-26C0-4D49-B5DB-5A8B36935903/Exchange2013-x64-cu23.exe' -Initialize -Description 'Download url for Exchange Server 2013 exe'
+# There does not seem to be a download for the unsupported Exchange 2013                       }
+#Set-PSFConfig -Module AutomatedLab -Name Exchange2013DownloadUrl -Value 'https://download.microsoft.com/download/7/F/D/7FDCC96C-26C0-4D49-B5DB-5A8B36935903/Exchange2013-x64-cu23.exe' -Initialize -Description 'Download url for Exchange Server 2013 exe'
 Set-PSFConfig -Module AutomatedLab -Name Exchange2016DownloadUrl -Value 'https://download.microsoft.com/download/8/d/2/8d2d01b4-5bbb-4726-87da-0e331bc2b76f/ExchangeServer2016-x64-CU23.ISO' -Initialize -Description 'Download url for Exchange Server 2016 ISO'
-Set-PSFConfig -Module AutomatedLab -Name Exchange2019DownloadUrl -Value 'https://download.microsoft.com/download/b/c/7/bc766694-8398-4258-8e1e-ce4ddb9b3f7d/ExchangeServer2019-x64-CU12.ISO' -Initialize -Description 'Download url for Exchange Server 2019 ISO'
+Set-PSFConfig -Module AutomatedLab -Name Exchange2019DownloadUrl -Value 'https://download.microsoft.com/download/8/0/b/80b356e4-f7b1-4e11-9586-d3132a7a2fc3/Exchange2019-KB5049233-x64-en.exe' -Initialize -Description 'Download url for Exchange Server 2019 ISO'
 
 # ConfigMgr
 Set-PSFConfig -Module AutomatedLab -Name ConfigurationManagerWmiExplorer -Value 'https://github.com/vinaypamnani/wmie2/releases/download/v2.0.0.2/WmiExplorer_2.0.0.2.zip' -Description 'Link to WMI explorer' -Validation string
@@ -418,6 +419,30 @@ Set-PSFConfig -Module AutomatedLab -Name ConfigurationManagerUrl2103CB -Value "h
 Set-PSFConfig -Module AutomatedLab -Name ConfigurationManagerUrl2203CB -Value 'https://download.microsoft.com/download/f/5/5/f55e3b9c-781d-493b-932b-16aa1b2f6371/MEM_Configmgr_2203.exe' -Description 'Link to ConfigMgr 2203 CB' -Validation string
 #Set-PSFConfig -Module AutomatedLab -Name ConfigurationManagerUrl2210TP -Value "https://download.microsoft.com/download/D/8/E/D8E795CE-44D7-40B7-9067-D3D1313865E5/Configmgr_TechPreview2210.exe"
 Set-PSFConfig -Module AutomatedLab -Name ConfigurationManagerUrl2411TP -Value "https://download.microsoft.com/download/D/8/E/D8E795CE-44D7-40B7-9067-D3D1313865E5/ConfigMgr_TechPreview2411.exe" -Description 'Link to ConfigMgr 2411 TP' -Validation string
+
+# Kubernetes
+Set-PSFConfig -Module AutomatedLab -Name KubernetesComponentUrls -Value @{
+    kubectl           = 'https://dl.k8s.io/vKUBEVERSION/bin/linux/amd64/kubectl'
+    apiserver         = 'https://dl.k8s.io/vKUBEVERSION/bin/linux/amd64/kube-apiserver'
+    controllermanager = 'https://dl.k8s.io/vKUBEVERSION/bin/linux/amd64/kube-controller-manager'
+    scheduler         = 'https://dl.k8s.io/vKUBEVERSION/bin/linux/amd64/kube-scheduler'
+    proxy             = 'https://dl.k8s.io/vKUBEVERSION/bin/linux/amd64/kube-proxy'
+    kubelet           = 'https://dl.k8s.io/vKUBEVERSION/bin/linux/amd64/kubelet'
+    critools          = 'https://github.com/kubernetes-sigs/cri-tools/releases/download/vKUBEVERSION_MAJORMINOR/crictl-vKUBEVERSION_MAJORMINOR-linux-amd64.tar.gz'
+} -Initialize -Description 'Kubernetes Components. No reason to change this.' -Hidden
+Set-PSFConfig -Module AutomatedLab -Name KubernetesVersionedComponentUrls -Value @{
+    etcd = 'https://github.com/etcd-io/etcd/releases/download/v3.7.3/etcd-v3.7.3-linux-amd64.tar.gz'
+    cri  = 'https://github.com/containerd/containerd/releases/download/v2.4.2/containerd-2.4.2-linux-amd64.tar.gz'
+    cni  = 'https://github.com/containernetworking/plugins/releases/download/v1.10.0/cni-plugins-linux-amd64-v1.10.0.tgz'
+    csi  = 'https://github.com/kubernetes-csi/csi-driver-smb/archive/refs/tags/v1.20.4.zip'
+    helm = 'https://get.helm.sh/helm-v4.3.2-linux-amd64.tar.gz'
+} -Description "Versioned URLs for etcd, cri, cni, csi"
+Set-PSFConfig -Module AutomatedLab -Name KubernetesInstallationSnippets -Value @{
+    cri  = {}
+    cni  = {}
+    csi  = {}
+    helm = {}
+} -Description "Meant for non-standard stuff like cri, cni and csi." -Initialize
 
 # Validation
 Set-PSFConfig -Module AutomatedLab -Name ValidationSettings -Value @{
@@ -1101,11 +1126,14 @@ ECDSA_P384#Microsoft Smart Card Key Storage Provider =>'sha256','sha384','sha512
             'ProductId'       = '[string] Product Key'
         }
         Kubernetes               = @{
-            ClusterName = '[string] Name of the cluster. Defaults to "kubernetes"'
-            NodeRole    = '[string] Node role. Currently, setup ignores node roles, and deploys one master with additional workers. Intended for future use such as etcd, ...'
-            CriType     = '[string] Container Runtime Interface, currently only CRI-O is supported'
-            CniType     = '[string] Cluster Network Interface, currently only Tigera Calico is supported'
-            CsiType     = '[string] Cluster Storage Interface, currently only SMB is supported'
+            Version               = '[string] Version to use, defaults to 1.37.2'
+            ClusterName           = '[string] Name of the cluster. Defaults to "kubernetes"'
+            NodeRole              = '[string] Node role. Either ControlPlane or Worker. Might be extended for future use such as etcd, ...'
+            CriType               = '[string] Container Runtime Interface, currently only containerd is supported'
+            CniType               = '[string] Cluster Network Interface, currently only Bridge is supported'
+            CsiType               = '[string] Cluster Storage Interface, currently only SMB is supported'
+            ServiceClusterIpRange = '[string] Cluster-internal communications. Defaults to 10.32.0.0/24'
+            ClusterCidr           = '[string] Pod IP Range. Defaults to 10.200.0.0/16'
         }
     }
     MandatoryRoleProperties = @{
