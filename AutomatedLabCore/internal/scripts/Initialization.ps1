@@ -406,7 +406,7 @@ Set-PSFConfig -Module AutomatedLab -Name Dynamics365Uri -Value 'https://download
 # There does not seem to be a download for the unsupported Exchange 2013                       }
 #Set-PSFConfig -Module AutomatedLab -Name Exchange2013DownloadUrl -Value 'https://download.microsoft.com/download/7/F/D/7FDCC96C-26C0-4D49-B5DB-5A8B36935903/Exchange2013-x64-cu23.exe' -Initialize -Description 'Download url for Exchange Server 2013 exe'
 Set-PSFConfig -Module AutomatedLab -Name Exchange2016DownloadUrl -Value 'https://download.microsoft.com/download/8/d/2/8d2d01b4-5bbb-4726-87da-0e331bc2b76f/ExchangeServer2016-x64-CU23.ISO' -Initialize -Description 'Download url for Exchange Server 2016 ISO'
-Set-PSFConfig -Module AutomatedLab -Name Exchange2019DownloadUrl -Value 'https://download.microsoft.com/download/8/0/b/80b356e4-f7b1-4e11-9586-d3132a7a2fc3/Exchange2019-KB5049233-x64-en.exe' -Initialize -Description 'Download url for Exchange Server 2019 ISO'
+Set-PSFConfig -Module AutomatedLab -Name Exchange2019DownloadUrl -Value 'https://download.microsoft.com/download/b/f/7/bf7700c9-c2fd-40be-82cc-7c5330b5f981/ExchangeServer2019-x64-CU14.ISO' -Initialize -Description 'Download url for Exchange Server 2019 ISO'
 
 # ConfigMgr
 Set-PSFConfig -Module AutomatedLab -Name ConfigurationManagerWmiExplorer -Value 'https://github.com/vinaypamnani/wmie2/releases/download/v2.0.0.2/WmiExplorer_2.0.0.2.zip' -Description 'Link to WMI explorer' -Validation string

@@ -564,16 +564,6 @@ Default value: https://download.microsoft.com/download/B/D/0/BD0FA814-9885-422A-
 Set with: `Set-PSFConfig -FullName AutomatedLab.Dynamics365Uri -Value <YourValue> -PassThru | Register-PSFConfig`
 
 
-### Exchange2013DownloadUrl
-
-Download url for Exchange Server 2013 exe
-
-Data type: System.String  
-Hidden?: False  
-Default value: https://download.microsoft.com/download/7/F/D/7FDCC96C-26C0-4D49-B5DB-5A8B36935903/Exchange2013-x64-cu23.exe  
-
-Set with: `Set-PSFConfig -FullName AutomatedLab.Exchange2013DownloadUrl -Value <YourValue> -PassThru | Register-PSFConfig`
-
 
 ### Exchange2016DownloadUrl
 
