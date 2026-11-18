@@ -22,7 +22,7 @@
 
     Write-LogFunctionEntry
 
-    $machines = Get-LabVM -ComputerName $ComputerName
+    $machines = Get-LabVM -ComputerName $ComputerName -IncludeLinux
     if (-not $machines)
     {
         Write-LogFunctionExitWithError -Message 'The specified machines could not be found'
@@ -118,7 +118,7 @@
                 $folderName = Split-Path -Path $p -Leaf
                 $targetFolder = if ($folderName -eq "*")
                 {
-                    "\"
+                    "/"
                 }
                 else
                 {
