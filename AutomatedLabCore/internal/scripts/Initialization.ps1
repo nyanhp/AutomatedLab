@@ -428,21 +428,198 @@ Set-PSFConfig -Module AutomatedLab -Name KubernetesComponentUrls -Value @{
     scheduler         = 'https://dl.k8s.io/vKUBEVERSION/bin/linux/amd64/kube-scheduler'
     proxy             = 'https://dl.k8s.io/vKUBEVERSION/bin/linux/amd64/kube-proxy'
     kubelet           = 'https://dl.k8s.io/vKUBEVERSION/bin/linux/amd64/kubelet'
-    critools          = 'https://github.com/kubernetes-sigs/cri-tools/releases/download/vKUBEVERSION_MAJORMINOR/crictl-vKUBEVERSION_MAJORMINOR-linux-amd64.tar.gz'
 } -Initialize -Description 'Kubernetes Components. No reason to change this.' -Hidden
 Set-PSFConfig -Module AutomatedLab -Name KubernetesVersionedComponentUrls -Value @{
-    etcd = 'https://github.com/etcd-io/etcd/releases/download/v3.7.3/etcd-v3.7.3-linux-amd64.tar.gz'
-    cri  = 'https://github.com/containerd/containerd/releases/download/v2.4.2/containerd-2.4.2-linux-amd64.tar.gz'
-    cni  = 'https://github.com/containernetworking/plugins/releases/download/v1.10.0/cni-plugins-linux-amd64-v1.10.0.tgz'
-    csi  = 'https://github.com/kubernetes-csi/csi-driver-smb/archive/refs/tags/v1.20.4.zip'
-    helm = 'https://get.helm.sh/helm-v4.3.2-linux-amd64.tar.gz'
+    etcd     = @{
+        Uri            = 'https://github.com/etcd-io/etcd/releases/download/v3.7.3/etcd-v3.7.3-linux-amd64.tar.gz'
+        Decompress     = $false
+        DecompressOnVm = $true
+    }
+    cri      = @{
+        Uri            = 'https://github.com/containerd/containerd/releases/download/v2.4.2/containerd-2.4.2-linux-amd64.tar.gz'
+        Decompress     = $false
+        DecompressOnVm = $true
+    }
+    critools = @{
+        Uri            = 'https://github.com/kubernetes-sigs/cri-tools/releases/download/vKUBEVERSION_MAJORMINOR/crictl-vKUBEVERSION_MAJORMINOR-linux-amd64.tar.gz'
+        Decompress     = $false
+        DecompressOnVm = $true
+    }
+    cni      = @{
+        Uri            = 'https://github.com/containernetworking/plugins/releases/download/v1.10.0/cni-plugins-linux-amd64-v1.10.0.tgz'
+        Decompress     = $false
+        DecompressOnVm = $true
+    }
+    csi      = @{
+        Uri        = 'https://github.com/kubernetes-csi/csi-driver-smb/archive/refs/tags/v1.20.4.zip'
+        Decompress = $true
+    }
+    helm     = @{
+        Uri            = 'https://get.helm.sh/helm-v4.3.2-linux-amd64.tar.gz'
+        Decompress     = $false
+        DecompressOnVm = $true
+    }
 } -Description "Versioned URLs for etcd, cri, cni, csi"
 Set-PSFConfig -Module AutomatedLab -Name KubernetesInstallationSnippets -Value @{
+    etcd = {}
     cri  = {}
     cni  = {}
     csi  = {}
     helm = {}
 } -Description "Meant for non-standard stuff like cri, cni and csi." -Initialize
+Set-PSFConfig -Module AutomatedLab -Name KubernetesSystemdTemplates -Value @{
+    cri               = @"
+[Unit]
+Description=containerd container runtime
+Documentation=https://containerd.io
+After=network.target
+
+[Service]
+ExecStartPre=/sbin/modprobe overlay
+ExecStart=/bin/containerd
+Restart=always
+RestartSec=5
+Delegate=yes
+KillMode=process
+OOMScoreAdjust=-999
+LimitNOFILE=1048576
+LimitNPROC=infinity
+LimitCORE=infinity
+
+[Install]
+WantedBy=multi-user.target
+"@
+    etcd              = @"
+[Unit]
+Description=etcd
+Documentation=https://github.com/etcd-io/etcd
+
+[Service]
+Type=notify
+ExecStart=/usr/local/bin/etcd \
+  --name controller \
+  --initial-advertise-peer-urls http://127.0.0.1:2380 \
+  --listen-peer-urls http://127.0.0.1:2380 \
+  --listen-client-urls http://127.0.0.1:2379 \
+  --advertise-client-urls http://127.0.0.1:2379 \
+  --initial-cluster-token etcd-cluster-0 \
+  --initial-cluster controller=http://127.0.0.1:2380 \
+  --initial-cluster-state new \
+  --data-dir=/var/lib/etcd
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+"@
+    apiserver         = @'
+[Unit]
+Description=Kubernetes API Server
+Documentation=https://github.com/kubernetes/kubernetes
+
+[Service]
+ExecStart=/usr/local/bin/kube-apiserver \
+  --allow-privileged=true \
+  --audit-log-maxage=30 \
+  --audit-log-maxbackup=3 \
+  --audit-log-maxsize=100 \
+  --audit-log-path=/var/log/audit.log \
+  --authorization-mode=Node,RBAC \
+  --bind-address=0.0.0.0 \
+  --client-ca-file=/var/lib/kubernetes/ca.crt \
+  --enable-admission-plugins=NamespaceLifecycle,NodeRestriction,LimitRanger,ServiceAccount,DefaultStorageClass,ResourceQuota \
+  --etcd-servers=http://127.0.0.1:2379 \
+  --event-ttl=1h \
+  --encryption-provider-config=/var/lib/kubernetes/encryption-config.yaml \
+  --kubelet-certificate-authority=/var/lib/kubernetes/ca.crt \
+  --kubelet-client-certificate=/var/lib/kubernetes/kube-api-server.crt \
+  --kubelet-client-key=/var/lib/kubernetes/kube-api-server.key \
+  --runtime-config='api/all=true' \
+  --service-account-key-file=/var/lib/kubernetes/service-accounts.crt \
+  --service-account-signing-key-file=/var/lib/kubernetes/service-accounts.key \
+  --service-account-issuer=https://server.kubernetes.local:6443 \
+  --service-node-port-range=30000-32767 \
+  --tls-cert-file=/var/lib/kubernetes/kube-api-server.crt \
+  --tls-private-key-file=/var/lib/kubernetes/kube-api-server.key \
+  --v=2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+'@
+    controllermanager = @'
+[Unit]
+Description=Kubernetes Controller Manager
+Documentation=https://github.com/kubernetes/kubernetes
+
+[Service]
+ExecStart=/usr/local/bin/kube-controller-manager \
+  --bind-address=0.0.0.0 \
+  --cluster-cidr=CLUSTERCIDR \
+  --cluster-name=kubernetes \
+  --cluster-signing-cert-file=/var/lib/kubernetes/ca.crt \
+  --cluster-signing-key-file=/var/lib/kubernetes/ca.key \
+  --kubeconfig=/var/lib/kubernetes/kube-controller-manager.kubeconfig \
+  --root-ca-file=/var/lib/kubernetes/ca.crt \
+  --service-account-private-key-file=/var/lib/kubernetes/service-accounts.key \
+  --service-cluster-ip-range=SERVICECIDR \
+  --use-service-account-credentials=true \
+  --v=2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+'@
+    proxy             = @'
+[Unit]
+Description=Kubernetes Kube Proxy
+Documentation=https://github.com/kubernetes/kubernetes
+
+[Service]
+ExecStart=/usr/local/bin/kube-proxy \
+  --config=/var/lib/kube-proxy/kube-proxy-config.yaml
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+'@
+    scheduler         = @'
+[Unit]
+Description=Kubernetes Scheduler
+Documentation=https://github.com/kubernetes/kubernetes
+
+[Service]
+ExecStart=/usr/local/bin/kube-scheduler \
+  --config=/etc/kubernetes/config/kube-scheduler.yaml \
+  --v=2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+'@
+    kubelet           = @'
+[Unit]
+Description=Kubernetes Kubelet
+Documentation=https://github.com/kubernetes/kubernetes
+After=containerd.service
+Requires=containerd.service
+
+[Service]
+ExecStart=/usr/local/bin/kubelet \
+  --config=/var/lib/kubelet/kubelet-config.yaml \
+  --kubeconfig=/var/lib/kubelet/kubeconfig \
+  --v=2
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+'@
+}
 
 # Validation
 Set-PSFConfig -Module AutomatedLab -Name ValidationSettings -Value @{
