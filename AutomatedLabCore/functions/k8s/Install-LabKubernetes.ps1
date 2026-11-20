@@ -2,6 +2,18 @@ function Install-LabKubernetes {
     [CmdletBinding()]
     param ()
 
+    $requiredBinaries = @('openssl')
+
+    $missingCommands = foreach ($binary in $requiredBinaries) {
+        $command = Get-Command -ErrorAction SilentlyContinue -Name $binary
+        if ($null -eq $command) { $binary }
+    }
+
+    if ($missingCommands) {
+        Write-ScreenInfo -Type Error "The following binaries do not exist, cannot continue setting up Kubernetes: $missingCommands"
+        return
+    }
+
     # Kudos to https://github.com/kelseyhightower/kubernetes-the-hard-way for a proper bootstrapping
 
     <#
@@ -10,6 +22,9 @@ function Install-LabKubernetes {
       - First node shares NFS mount to other nodes (instead of file server cluster nfs)
       - Cluster uses cacert file, even if LabCA is available (shortcomings of request-labcertificate, as k8s needs to sign certs, acting as an intermediary)
     - Networking, Storage, Container Runtime uses simple defaults containerd, nfs, bridge-networking
+
+    To Dos:
+    - Validators! Need to check for uneven CP count and uneven etcd count once supported
 
     Future improvements:
     - Custom csi, cni, cri, prepared already with install snippets
@@ -152,9 +167,15 @@ basicConstraints     = CA:FALSE
 extendedKeyUsage     = clientAuth, serverAuth
 keyUsage             = critical, digitalSignature, keyEncipherment
 nsCertType           = client, server
-nsComment            = "Kube API Server Certificate"
+nsComment            = "Kube API Server Certificate"    
 subjectAltName       = @kube-api-server_alt_names
 subjectKeyIdentifier = hash
+
+[kube-api-server_distinguished_name]
+CN = kubernetes
+C  = US
+ST = Washington
+L  = Seattle
 
 [kube-api-server_alt_names]
 IP.0  = 127.0.0.1
@@ -164,33 +185,25 @@ DNS.1 = kubernetes.default
 DNS.2 = kubernetes.default.svc
 DNS.3 = kubernetes.default.svc.cluster
 DNS.4 = kubernetes.svc.cluster.local
-DNS.5 = server.kubernetes.local
-DNS.6 = api-server.kubernetes.local
-
-[kube-api-server_distinguished_name]
-CN = kubernetes
-C  = US
-ST = Washington
-L  = Seattle
 '@
 
     $caConfWorkerTemplate = @'
-[WORKERNODENAME]
-distinguished_name = WORKERNODENAME_distinguished_name
+[NODENAME]
+distinguished_name = NODENAME_distinguished_name
 prompt             = no
-req_extensions     = WORKERNODENAME_req_extensions
+req_extensions     = NODENAME_req_extensions
 
-[WORKERNODENAME_req_extensions]
+[NODENAME_req_extensions]
 basicConstraints     = CA:FALSE
 extendedKeyUsage     = clientAuth, serverAuth
 keyUsage             = critical, digitalSignature, keyEncipherment
 nsCertType           = client
-nsComment            = "WORKERNODENAME Certificate"
-subjectAltName       = DNS:WORKERNODENAME, DNS:WORKERNODEFQDN, IP:127.0.0.1
+nsComment            = "NODENAME Certificate"
+subjectAltName       = DNS:NODENAME, DNS:NODEFQDN, IP:127.0.0.1
 subjectKeyIdentifier = hash
 
-[WORKERNODENAME_distinguished_name]
-CN = system:node:WORKERNODENAME
+[NODENAME_distinguished_name]
+CN = system:node:NODENAME
 O  = system:nodes
 C  = US
 ST = Washington
@@ -202,6 +215,94 @@ L  = Seattle
     if (-not $machines) {
         Write-Warning "No machines with the 'Kubernetes' role found. Exiting."
         return
+    }
+
+    Write-ScreenInfo "Preparing software packages"
+    Invoke-LabCommand -ComputerName $machines -ScriptBlock {
+        $null = New-Item -ItemType Directory -Path /var/lib/kubelet/ 
+
+        if (Get-Command dnf -ErrorAction SilentlyContinue) {
+            sudo dnf install -y nfs-utils libnfsidmap sssd-nfs-idmap socat conntrack ipset kmod
+        }
+        elseif (Get-Command apt-get -ErrorAction SilentlyContinue) {
+            sudo apt-get install -y nfs-kernel-server nfs-common socat conntrack ipset kmod
+        }
+        elseif (Get-Command zypper) {
+            sudo zypper in nfs-kernel-server nfs-common socat conntrack ipset kmod
+        }
+    } -NoDisplay -UseLocalCredential
+
+    Write-ScreenInfo "Provisioning Certificates"
+
+    $caKeyPath = Join-Path (Get-LabSourcesLocation -Local) "SoftwarePackages/Kubernetes/ca.key"
+    $confPath = [IO.Path]::ChangeExtension($caKeyPath, ".conf")
+    $caCertPath = [IO.Path]::ChangeExtension($caKeyPath, ".crt")
+    if (-not (Test-Path $caKeyPath)) {
+        $caConfTemplate | Set-Content -Path $confPath -Force
+        openssl genrsa -out $caKeyPath 4096
+        $null = openssl req -x509 -new -sha512 -noenc -key $caKeyPath -days 3653 -config $confPath -out $caCertPath
+
+        foreach ($centralComponent in @("admin", "kube-proxy", "kube-scheduler", "kube-controller-manager", "service-accounts")) {
+            $nodeKeyPath = Join-Path (Get-LabSourcesLocation -Local) "SoftwarePackages/Kubernetes/$centralComponent.key"
+            $nodeCertPath = [IO.Path]::ChangeExtension($nodeKeyPath, ".crt")
+            $nodeCsrPath = [IO.Path]::ChangeExtension($nodeKeyPath, ".csr")
+
+            openssl genrsa -out $nodeKeyPath 4096
+            openssl req -new -key $nodeKeyPath -sha256 -config $confPath -section $centralComponent -out $nodeCsrPath
+            $null = openssl x509 -req -days 3653 -in $nodeCsrPath -copy_extensions copyall -sha256 -CA $caCertPath -CAkey $caKeyPath -CAcreateserial -out $nodeCertPath
+        }
+    }
+
+    $controlPlaneCount = 4 # Starting with DNS.5 and DNS.6
+    foreach ($machine in $machines) {
+        $nodeRole = ($machine.Roles | Where-Object Name -eq 'Kubernetes').Properties['NodeRole']
+        $nodeKeyPath = Join-Path (Get-Lab).LabPath "$machine.key"
+        $nodeConfPath = [IO.Path]::ChangeExtension($nodeKeyPath, ".conf")
+        $nodeCertPath = [IO.Path]::ChangeExtension($nodeKeyPath, ".crt")
+        $nodeCsrPath = [IO.Path]::ChangeExtension($nodeKeyPath, ".csr")
+
+        if ($nodeRole -ne 'ControlPlane') {
+            $worker = $caConfWorkerTemplate.Replace('NODENAME', $machine.Name.ToLower()).Replace('NODEFQDN', $machine.FQDN.ToLower())
+            $worker | Set-Content -Path $nodeConfPath
+
+            openssl genrsa -out $nodeKeyPath 4096
+            openssl req -new -key $nodeKeyPath -sha256 -config $nodeConfPath -section $machine.Name.ToLower() -out $nodeCsrPath
+            $null = openssl x509 -req -days 3653 -in $nodeCsrPath -copy_extensions copyall -sha256 -CA $caCertPath -CAkey $caKeyPath -CAcreateserial -out $nodeCertPath
+
+            Copy-LabFileItem -Path $caCertPath, $nodeCertPath, $nodeKeyPath  -DestinationFolderPath /var/lib/kubelet -ComputerName $machine
+            Invoke-LabCommand $machine -Variable (Get-Variable machine) {
+                mv /var/lib/kubelet/$($machine.Name).crt /var/lib/kubelet/kubelet.crt
+                mv /var/lib/kubelet/$($machine.Name).key /var/lib/kubelet/kubelet.key
+            } -Retries 0
+            continue
+        }
+
+        Invoke-LabCommand $machine {
+            $null = New-Item -ItemType Directory -Path '/var/lib/kubernetes', '/etc/etcd' -Force
+        }
+
+        [System.Text.StringBuilder]$apiServer = $caConfApiTemplate
+        $controlPlaneCount++
+        $null = $apiServer.AppendLine("DNS.$controlPlaneCount = $($machine.FQDN)")
+        $controlPlaneCount++
+        $null = $apiServer.AppendLine("DNS.$controlPlaneCount = api-server.$($machine.DomainName)")
+        $apiServer.ToString().Replace('SERVERIP', "IP.1 = $($machine.IpV4Address)") | Set-Content -Path $nodeConfPath
+        openssl genrsa -out $nodeKeyPath 4096
+        openssl req -new -key $nodeKeyPath -sha256 -config $nodeConfPath -section "kube-api-server" -out $nodeCsrPath
+        $null = openssl x509 -req -days 3653 -in $nodeCsrPath -copy_extensions copyall -sha256 -CA $caCertPath -CAkey $caKeyPath -CAcreateserial -out $nodeCertPath
+
+        $paths = @(
+            $nodeCertPath
+            $nodeKeyPath
+            (Get-Item (Join-Path (Get-LabSourcesLocation -Local) "SoftwarePackages/Kubernetes/*.crt") ).FullName
+            (Get-Item (Join-Path (Get-LabSourcesLocation -Local) "SoftwarePackages/Kubernetes/*.key")).FullName
+        )
+        Copy-LabFileItem -Path $paths -DestinationFolderPath /var/lib/kubernetes -ComputerName $machine
+        Invoke-LabCommand $machine -Variable (Get-Variable machine) {
+            Remove-Item '/var/lib/kubernetes/kube-api-server.crt', '/var/lib/kubernetes/kube-api-server.key' -ErrorAction SilentlyContinue
+            Rename-Item "/var/lib/kubernetes/$($machine.Name).crt" -NewName kube-api-server.crt
+            Rename-Item "/var/lib/kubernetes/$($machine.Name).key" -NewName kube-api-server.key
+        }
     }
 
     $versions = $machines | Foreach-Object {
@@ -217,7 +318,7 @@ L  = Seattle
             $destination = "$labSources/SoftwarePackages/Kubernetes/$($kubernetesVersion)/"
             $null = New-Item -ItemType Directory -Path $destination -Force -ErrorAction SilentlyContinue
             $theFile = Get-LabInternetFile -Uri $entry.Value.Replace('KUBEVERSION_MAJORMINOR', $versionMajorMinor.ToString()).Replace('KUBEVERSION', $versionFull.ToString()) -Path $destination -PassThru
-            Copy-LabFileItem -ComputerName $machines -Path $theFile.FullName -DestinationFolderPath '/usr/bin'
+            Copy-LabFileItem -ComputerName $machines -Path $theFile.FullName -DestinationFolderPath '/usr/local/bin'
         }
 
         foreach ($entry in (Get-LabConfigurationItem -Name KubernetesVersionedComponentUrls).GetEnumerator()) {
@@ -239,40 +340,6 @@ L  = Seattle
     downloads/controller/kube-controller-manager \
     downloads/controller/kube-scheduler \
     downloads/client/kubectl
-
-    Write-ScreenInfo "Provisioning Certificates"
-    # TODO openssl wenn keine CA
-    foreach ($cert in @(
-            "admin"
-            "kube-proxy"
-            "kube-scheduler"
-            "kube-controller-manager"
-            "kube-api-server"
-            "service-accounts"
-        ) ) {
-        Request-LabCertificate -Subject $cert -OnlineCA (Get-LabIssuingCA) -ComputerName $groups['ControlPlane'].Name
-    }
-
-    Write-ScreenInfo "Provisioning Worker NodeCertificates"
-    Invoke-LabCommand -ComputerName $groups['Worker'] -ScriptBlock { 
-        $null = New-Item -ItemType Directory -Path /var/lib/kubelet/ 
-    }
-    foreach ($worker in $groups['Worker']) {
-        # TODO Request-LabCert muss auch Linux Cert schreiben
-        Request-LabCertificate -Subject $worker.Fqdn, $worker.IpV4Address -SAN $worker.Name, $worker. -OnlineCA (Get-LabIssuingCA) -ComputerName $worker.Name
-    } -NoDisplay
-
-    Invoke-LabCommand -ComputerName $machines -ScriptBlock {
-        if (Get-Command dnf -ErrorAction SilentlyContinue) {
-            sudo dnf install -y nfs-utils libnfsidmap sssd-nfs-idmap socat conntrack ipset kmod
-        }
-        elseif (Get-Command apt-get -ErrorAction SilentlyContinue) {
-            sudo apt-get install -y nfs-kernel-server nfs-common socat conntrack ipset kmod
-        }
-        elseif (Get-Command zypper) {
-            sudo zypper in nfs-kernel-server nfs-common socat conntrack ipset kmod
-        }
-    } -NoDisplay
 
     foreach ($machine in $groups['ControlPlane']) {
         $roleParams = ($machine.Roles | Where-Object Name -eq 'Kubernetes').Properties
