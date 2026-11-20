@@ -58,7 +58,7 @@
             $null = realm join --one-time-password "'$Password'" $DomainName
             $null = sudo sed -i "/^%wheel.*/a %$($DomainName.ToUpper())\\\\domain\\ admins ALL=(ALL) NOPASSWD: ALL" /etc/sudoers
             $null = sudo mkdir -p "/home/$($UserName)@$($DomainName)"
-            $null = sudo chown -R "$($UserName)@$($DomainName):$($UserName)@$($DomainName)" /home/$($UserName)@$($DomainName) 2>$null
+            $null = sudo chown -R "$($UserName)@$($DomainName):domain users@$($DomainName)" /home/$($UserName)@$($DomainName) 2>$null
             if (-not [string]::IsNullOrWhiteSpace($SshPublicKey))
             {
                 $null = sudo mkdir -p "/home/$($UserName)@$($DomainName)/.ssh"
