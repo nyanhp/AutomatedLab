@@ -40,11 +40,11 @@
 
         [Parameter(ParameterSetName = 'ScriptBlock')]
         [Parameter(ParameterSetName = 'Script')]
-        [int]$Retries,
+        [int]$Retries = (Get-LabConfigurationItem -Name InvokeLabCommandRetries),
 
         [Parameter(ParameterSetName = 'ScriptBlock')]
         [Parameter(ParameterSetName = 'Script')]
-        [int]$RetryIntervalInSeconds,
+        [int]$RetryIntervalInSeconds = (Get-LabConfigurationItem -Name InvokeLabCommandRetryIntervalInSeconds),
 
         [int]$ThrottleLimit = 32,
 
@@ -65,17 +65,6 @@
         'PostInstallationActivity',
         'PreInstallationActivity'
 
-    if ($PSCmdlet.ParameterSetName -in $parameterSetsWithRetries)
-    {
-        if (-not $Retries)
-        {
-            $Retries = Get-LabConfigurationItem -Name InvokeLabCommandRetries
-        }
-        if (-not $RetryIntervalInSeconds)
-        {
-            $RetryIntervalInSeconds = Get-LabConfigurationItem -Name InvokeLabCommandRetryIntervalInSeconds
-        }
-    }
 
     if ($AsJob)
     {
